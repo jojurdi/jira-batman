@@ -3,480 +3,394 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Batman Worklog Tracker - Jira</title>
+    <title>Jira Batman</title>
     <style>
-        :root {
-            --bg: #0d1117;
-            --surface: #161b22;
-            --border: #30363d;
-            --text: #e6edf3;
-            --text-muted: #8b949e;
-            --accent: #f0b429;
-            --success: #2ea043;
-            --danger: #f85149;
-            --warning: #d29922;
-            --info: #58a6ff;
-        }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            background: #fff;
+            color: #1a1a1a;
             line-height: 1.5;
-            padding: 2rem;
+            font-size: 14px;
         }
 
-        .container { max-width: 1100px; margin: 0 auto; }
+        .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
 
         header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #e5e5e5;
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .logo svg { width: 40px; height: 40px; fill: var(--accent); }
-
-        .logo h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--accent);
-        }
+        .logo-group { display: flex; align-items: center; gap: 0.5rem; }
+        .logo-group svg { width: 32px; height: 20px; }
+        header h1 { font-size: 1.1rem; font-weight: 600; color: #333; }
 
         .header-right {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
         }
 
-        .user-info { color: var(--text-muted); font-size: 0.9rem; }
+        .user-info { color: #666; font-size: 0.8rem; }
 
         .btn-settings {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 0.4rem 0.7rem;
-            border-radius: 6px;
+            background: none;
+            border: 1px solid #ddd;
+            color: #888;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 1.1rem;
-            transition: all 0.15s;
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            justify-content: center;
         }
 
-        .btn-settings:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-settings:hover { border-color: #999; color: #555; }
 
         .filters {
             display: flex;
-            gap: 0.5rem;
+            gap: 0.35rem;
             flex-wrap: wrap;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             align-items: center;
         }
 
         .filters a, .filters button {
-            padding: 0.4rem 1rem;
-            border-radius: 6px;
-            font-size: 0.85rem;
+            padding: 0.3rem 0.75rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
             text-decoration: none;
-            color: var(--text);
-            background: var(--surface);
-            border: 1px solid var(--border);
+            color: #555;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
             cursor: pointer;
-            transition: all 0.15s;
         }
 
-        .filters a:hover, .filters button:hover { border-color: var(--accent); }
-        .filters a.active { background: var(--accent); color: #000; font-weight: 600; border-color: var(--accent); }
+        .filters a:hover, .filters button:hover { background: #eee; }
+        .filters a.active { background: #333; color: #fff; border-color: #333; }
 
         .filters input[type="date"] {
-            padding: 0.35rem 0.6rem;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: var(--surface);
-            color: var(--text);
-            font-size: 0.85rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+            background: #fff;
+            color: #333;
+            font-size: 0.8rem;
         }
 
-        .summary-cards {
+        .summary {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            overflow: hidden;
         }
 
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 1.25rem;
+        .summary-item {
+            padding: 0.9rem 1rem;
+            border-right: 1px solid #e5e5e5;
         }
 
-        .card-label {
-            font-size: 0.78rem;
+        .summary-item:last-child { border-right: none; }
+
+        .summary-label {
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: var(--text-muted);
-            margin-bottom: 0.3rem;
+            color: #999;
+            margin-bottom: 0.15rem;
         }
 
-        .card-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
+        .summary-value { font-size: 1.4rem; font-weight: 600; color: #1a1a1a; }
+        .summary-value.ok { color: #16793a; }
+        .summary-value.pending { color: #b35c00; }
+        .summary-value.missing { color: #c33; }
 
-        .card-value.success { color: var(--success); }
-        .card-value.danger { color: var(--danger); }
-        .card-value.warning { color: var(--warning); }
-        .card-value.info { color: var(--info); }
-
-        .progress-bar {
+        .progress-track {
             width: 100%;
-            height: 8px;
-            background: var(--border);
-            border-radius: 4px;
-            margin-top: 0.5rem;
-            overflow: hidden;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            margin-top: 0.4rem;
         }
 
-        .progress-fill {
+        .progress-track-fill {
             height: 100%;
-            border-radius: 4px;
-            transition: width 0.5s ease;
+            border-radius: 2px;
+            background: #333;
         }
 
-        .day-section {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            margin-bottom: 1rem;
+        .day {
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
             overflow: hidden;
         }
 
-        .day-header {
+        .day-head {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid var(--border);
+            padding: 0.6rem 0.9rem;
+            background: #fafafa;
             cursor: pointer;
+            user-select: none;
         }
 
-        .day-header:hover { background: rgba(240, 180, 41, 0.04); }
+        .day-head:hover { background: #f5f5f5; }
 
-        .day-title {
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
+        .day-label { font-weight: 500; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; }
+
+        .tag {
+            font-size: 0.68rem;
+            padding: 0.1rem 0.45rem;
+            border-radius: 2px;
+            font-weight: 500;
         }
 
-        .day-badge {
-            font-size: 0.75rem;
-            padding: 0.15rem 0.6rem;
-            border-radius: 20px;
-            font-weight: 600;
-        }
+        .tag-ok { background: #e6f4ea; color: #16793a; }
+        .tag-partial { background: #fff3e0; color: #b35c00; }
+        .tag-empty { background: #fde8e8; color: #c33; }
+        .tag-weekend { background: #f0f0f0; color: #999; }
 
-        .badge-complete { background: rgba(46, 160, 67, 0.2); color: var(--success); }
-        .badge-partial { background: rgba(210, 153, 34, 0.2); color: var(--warning); }
-        .badge-empty { background: rgba(248, 81, 73, 0.2); color: var(--danger); }
-        .badge-weekend { background: rgba(139, 148, 158, 0.2); color: var(--text-muted); }
+        .day-hrs { font-size: 0.8rem; color: #888; font-family: 'SF Mono', 'Consolas', monospace; }
+        .day-hrs strong { color: #333; }
 
-        .day-hours { font-size: 0.95rem; color: var(--text-muted); }
-        .day-hours strong { color: var(--text); }
+        .day-content { padding: 0 0.9rem 0.6rem; }
 
-        .day-body { padding: 0 1.25rem 1rem; }
-
-        .worklog-table {
+        table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.88rem;
+            font-size: 0.8rem;
         }
 
-        .worklog-table th {
+        th {
             text-align: left;
-            padding: 0.6rem 0.5rem;
-            color: var(--text-muted);
+            padding: 0.4rem 0.3rem;
+            color: #999;
             font-weight: 500;
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .worklog-table td {
-            padding: 0.6rem 0.5rem;
-            border-bottom: 1px solid rgba(48, 54, 61, 0.5);
-        }
-
-        .worklog-table tr:last-child td { border-bottom: none; }
-
-        .issue-key {
-            color: var(--info);
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        .issue-key:hover { text-decoration: underline; }
-
-        .status-badge {
             font-size: 0.72rem;
-            padding: 0.15rem 0.5rem;
-            border-radius: 3px;
-            background: rgba(88, 166, 255, 0.15);
-            color: var(--info);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            border-bottom: 1px solid #eee;
         }
 
-        .time-cell { font-family: 'SF Mono', 'Fira Code', monospace; font-weight: 600; }
+        td {
+            padding: 0.4rem 0.3rem;
+            border-bottom: 1px solid #f5f5f5;
+            color: #444;
+        }
 
-        .empty-day {
+        tr:last-child td { border-bottom: none; }
+
+        .key-link { color: #0052cc; font-weight: 500; text-decoration: none; }
+        .key-link:hover { text-decoration: underline; }
+
+        .status-tag {
+            font-size: 0.68rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 2px;
+            background: #e4ecf7;
+            color: #0052cc;
+        }
+
+        .mono { font-family: 'SF Mono', 'Consolas', monospace; font-weight: 500; }
+
+        .no-data {
             text-align: center;
-            padding: 1.5rem;
-            color: var(--text-muted);
-            font-style: italic;
+            padding: 1rem;
+            color: #bbb;
+            font-size: 0.82rem;
         }
 
-        .error-box {
-            background: rgba(248, 81, 73, 0.1);
-            border: 1px solid var(--danger);
-            border-radius: 10px;
-            padding: 1.5rem;
-            color: var(--danger);
-            margin-bottom: 1.5rem;
+        .error-msg {
+            background: #fef2f2;
+            border: 1px solid #e5c5c5;
+            border-radius: 4px;
+            padding: 0.9rem 1rem;
+            color: #8b2020;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
         }
 
-        .error-box strong { display: block; margin-bottom: 0.3rem; }
+        .error-msg strong { display: block; margin-bottom: 0.2rem; }
 
         /* Modal */
-        .modal-overlay {
+        .overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.35);
             z-index: 1000;
             justify-content: center;
             align-items: center;
         }
 
-        .modal-overlay.active { display: flex; }
+        .overlay.active { display: flex; }
 
-        .modal {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 2rem;
+        .dialog {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 1.5rem;
             width: 100%;
-            max-width: 480px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-width: 420px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
-        .modal h2 {
-            font-size: 1.2rem;
-            margin-bottom: 0.3rem;
-            color: var(--accent);
-        }
+        .dialog h2 { font-size: 1rem; font-weight: 600; color: #333; margin-bottom: 1rem; }
 
-        .modal p.subtitle {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-bottom: 1.5rem;
-        }
+        .field { margin-bottom: 0.9rem; }
 
-        .form-group {
-            margin-bottom: 1.2rem;
-        }
-
-        .form-group label {
+        .field label {
             display: block;
-            font-size: 0.82rem;
-            font-weight: 500;
-            color: var(--text-muted);
-            margin-bottom: 0.35rem;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 0.6rem 0.8rem;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: var(--bg);
-            color: var(--text);
-            font-size: 0.9rem;
-            transition: border-color 0.15s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .form-group .hint {
             font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-top: 0.25rem;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 0.75rem;
-            justify-content: flex-end;
-            margin-top: 1.5rem;
-        }
-
-        .btn {
-            padding: 0.5rem 1.2rem;
-            border-radius: 6px;
-            font-size: 0.88rem;
             font-weight: 500;
+            color: #666;
+            margin-bottom: 0.2rem;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 0.45rem 0.6rem;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+            font-size: 0.85rem;
+            color: #333;
+        }
+
+        .field input:focus { outline: none; border-color: #999; }
+
+        .field .note {
+            font-size: 0.7rem;
+            color: #aaa;
+            margin-top: 0.15rem;
+        }
+
+        .field .note a { color: #0052cc; }
+
+        .dialog-footer {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+            margin-top: 1.25rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-sm {
+            padding: 0.35rem 0.9rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
             cursor: pointer;
-            transition: all 0.15s;
-            border: 1px solid var(--border);
+            border: 1px solid #ddd;
+            background: #f5f5f5;
+            color: #555;
         }
 
-        .btn-primary {
-            background: var(--accent);
-            color: #000;
-            border-color: var(--accent);
-        }
+        .btn-sm:hover { background: #eee; }
 
-        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-sm.primary { background: #333; color: #fff; border-color: #333; }
+        .btn-sm.primary:hover { background: #444; }
 
-        .btn-ghost {
-            background: transparent;
-            color: var(--text-muted);
-        }
+        .btn-sm.danger { color: #c33; border-color: transparent; background: transparent; font-size: 0.75rem; }
+        .btn-sm.danger:hover { background: #fef2f2; }
 
-        .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
-
-        .btn-danger-sm {
-            background: transparent;
-            color: var(--danger);
-            border: 1px solid transparent;
-            padding: 0.3rem 0.8rem;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            cursor: pointer;
-        }
-
-        .btn-danger-sm:hover { border-color: var(--danger); }
-
-        .setup-prompt {
+        .setup-msg {
             text-align: center;
-            padding: 4rem 2rem;
+            padding: 3rem 1.5rem;
+            color: #888;
         }
 
-        .setup-prompt svg { width: 64px; height: 64px; fill: var(--accent); margin-bottom: 1.5rem; }
-        .setup-prompt h2 { font-size: 1.4rem; margin-bottom: 0.5rem; }
-        .setup-prompt p { color: var(--text-muted); margin-bottom: 1.5rem; }
+        .setup-msg h2 { font-size: 1rem; color: #333; margin-bottom: 0.4rem; }
+        .setup-msg p { font-size: 0.85rem; margin-bottom: 1rem; }
 
-        .connected-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--success);
-            margin-right: 0.3rem;
-        }
-
-        @media (max-width: 768px) {
-            body { padding: 1rem; }
-            header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-            .summary-cards { grid-template-columns: repeat(2, 1fr); }
-            .modal { margin: 1rem; }
+        @media (max-width: 640px) {
+            .container { padding: 1rem; }
+            header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+            .summary { grid-template-columns: repeat(2, 1fr); }
+            .summary-item:nth-child(2) { border-right: none; }
         }
     </style>
 </head>
 <body>
-<div class="container">
+<div class="container"
+     data-cfg-email="<?= htmlspecialchars($jiraEmail) ?>"
+     data-has-token="<?= $hasToken ? '1' : '0' ?>">
     <header>
-        <div class="logo">
-            <svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
-                <path d="M50 5 C35 5 20 20 5 40 C15 35 25 32 35 33 C38 28 44 22 50 18 C56 22 62 28 65 33 C75 32 85 35 95 40 C80 20 65 5 50 5Z"/>
-            </svg>
-            <h1>Batman Worklog Tracker</h1>
+        <div class="logo-group">
+            <svg viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg" fill="#1a1a1a"><path d="M50 2C42 2 33 10 25 20c-4 5-8 10-13 14 2-1 6-2 10-2 3 0 6 1 8 2 2-5 6-11 10-15 2-3 5-6 10-8 5 2 8 5 10 8 4 4 8 10 10 15 2-1 5-2 8-2 4 0 8 1 10 2-5-4-9-9-13-14C87 10 78 2 70 2c-6 0-12 3-20 0z"/></svg>
+            <h1>Jira Batman</h1>
         </div>
         <div class="header-right">
             <?php if ($displayName): ?>
-                <div class="user-info">
-                    <span class="connected-dot"></span>
-                    <?= htmlspecialchars($displayName) ?> &middot; <?= htmlspecialchars($timezone) ?>
-                </div>
+                <span class="user-info"><?= htmlspecialchars($displayName) ?> &middot; <?= htmlspecialchars($timezone) ?></span>
             <?php endif; ?>
             <button class="btn-settings" onclick="openSettings()" title="Configuraci&oacute;n">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 100 6.492 3.246 3.246 0 000-6.492zM5.754 8a2.246 2.246 0 114.492 0 2.246 2.246 0 01-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 01-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 01-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 01.52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 011.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 011.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 01.52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 01-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 01-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 002.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 001.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 00-1.115 2.693l.16.291c.415.764-.421 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 00-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 00-2.692-1.115l-.292.16c-.764.415-1.6-.421-1.184-1.185l.159-.291A1.873 1.873 0 001.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 003.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 002.692-1.115l.094-.319z"/></svg>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 100 6.492 3.246 3.246 0 000-6.492zM5.754 8a2.246 2.246 0 114.492 0 2.246 2.246 0 01-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 01-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 01-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 01.52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 011.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 011.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 01.52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 01-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 01-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 002.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 001.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 00-1.115 2.693l.16.291c.415.764-.421 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 00-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 00-2.692-1.115l-.292.16c-.764.415-1.6-.421-1.184-1.185l.159-.291A1.873 1.873 0 001.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 003.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 002.692-1.115l.094-.319z"/></svg>
             </button>
         </div>
     </header>
 
     <?php if ($needsSetup): ?>
-        <div class="setup-prompt">
-            <svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
-                <path d="M50 5 C35 5 20 20 5 40 C15 35 25 32 35 33 C38 28 44 22 50 18 C56 22 62 28 65 33 C75 32 85 35 95 40 C80 20 65 5 50 5Z"/>
-            </svg>
-            <h2>Configura tu conexi&oacute;n a Jira</h2>
-            <p>Ingresa tu URL de Jira, email y API token para comenzar a ver tu reporte de horas.</p>
-            <button class="btn btn-primary" onclick="openSettings()">Configurar ahora</button>
+        <div class="setup-msg">
+            <h2>Sin conexi&oacute;n configurada</h2>
+            <p>Configura tu email y API token de Jira para consultar tus horas.</p>
+            <button class="btn-sm primary" onclick="openSettings()">Configurar</button>
         </div>
     <?php else: ?>
         <div class="filters">
             <a href="?range=today" class="<?= $rangeType === 'today' ? 'active' : '' ?>">Hoy</a>
             <a href="?range=week" class="<?= $rangeType === 'week' ? 'active' : '' ?>">Semana</a>
             <a href="?range=month" class="<?= $rangeType === 'month' ? 'active' : '' ?>">Mes</a>
-            <span style="color: var(--text-muted); margin: 0 0.3rem;">|</span>
-            <form method="get" style="display: flex; gap: 0.5rem; align-items: center;">
+            <span style="color: #ccc; margin: 0 0.2rem;">|</span>
+            <form method="get" style="display: flex; gap: 0.35rem; align-items: center;">
                 <input type="hidden" name="range" value="custom">
                 <input type="date" name="start" value="<?= htmlspecialchars($startDate) ?>">
-                <span style="color: var(--text-muted);">a</span>
+                <span style="color: #bbb;">&ndash;</span>
                 <input type="date" name="end" value="<?= htmlspecialchars($endDate) ?>">
-                <button type="submit">Buscar</button>
+                <button type="submit">Ir</button>
             </form>
         </div>
 
         <?php if ($error): ?>
-            <div class="error-box">
-                <strong>Error al conectar con Jira</strong>
+            <div class="error-msg">
+                <strong>Error</strong>
                 <?= htmlspecialchars($error) ?>
             </div>
         <?php endif; ?>
 
         <?php if ($report): ?>
             <?php $s = $report['summary']; ?>
-            <div class="summary-cards">
-                <div class="card">
-                    <div class="card-label">Horas registradas</div>
-                    <div class="card-value info"><?= $s['totalLogged'] ?>h</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: <?= min(100, $s['completionPercent']) ?>%; background: <?= $s['completionPercent'] >= 100 ? 'var(--success)' : ($s['completionPercent'] >= 50 ? 'var(--warning)' : 'var(--danger)') ?>;"></div>
+            <div class="summary">
+                <div class="summary-item">
+                    <div class="summary-label">Registradas</div>
+                    <div class="summary-value"><?= $s['totalLogged'] ?>h</div>
+                    <div class="progress-track">
+                        <div class="progress-track-fill" style="width: <?= min(100, $s['completionPercent']) ?>%;"></div>
                     </div>
                 </div>
-                <div class="card">
-                    <div class="card-label">Horas esperadas</div>
-                    <div class="card-value"><?= $s['totalExpected'] ?>h</div>
+                <div class="summary-item">
+                    <div class="summary-label">Esperadas</div>
+                    <div class="summary-value"><?= $s['totalExpected'] ?>h</div>
                 </div>
-                <div class="card">
-                    <div class="card-label">Horas faltantes</div>
-                    <div class="card-value <?= $s['totalRemaining'] > 0 ? 'danger' : 'success' ?>">
-                        <?= $s['totalRemaining'] > 0 ? $s['totalRemaining'] . 'h' : 'Completo' ?>
+                <div class="summary-item">
+                    <div class="summary-label">Faltantes</div>
+                    <div class="summary-value <?= $s['totalRemaining'] > 0 ? 'missing' : 'ok' ?>">
+                        <?= $s['totalRemaining'] > 0 ? $s['totalRemaining'] . 'h' : '0h' ?>
                     </div>
                 </div>
-                <div class="card">
-                    <div class="card-label">Avance</div>
-                    <div class="card-value <?= $s['completionPercent'] >= 100 ? 'success' : ($s['completionPercent'] >= 50 ? 'warning' : 'danger') ?>">
+                <div class="summary-item">
+                    <div class="summary-label">Avance</div>
+                    <div class="summary-value <?= $s['completionPercent'] >= 100 ? 'ok' : ($s['completionPercent'] >= 50 ? 'pending' : 'missing') ?>">
                         <?= $s['completionPercent'] ?>%
                     </div>
                 </div>
@@ -485,39 +399,39 @@
             <?php foreach ($report['days'] as $day): ?>
                 <?php
                     if ($day['isWeekend']) {
-                        $badgeClass = 'badge-weekend';
-                        $badgeText = 'Fin de semana';
+                        $tagClass = 'tag-weekend';
+                        $tagText = 'Descanso';
                     } elseif ($day['totalHours'] >= $hoursPerDay) {
-                        $badgeClass = 'badge-complete';
-                        $badgeText = 'Completo';
+                        $tagClass = 'tag-ok';
+                        $tagText = 'Completo';
                     } elseif ($day['totalHours'] > 0) {
-                        $badgeClass = 'badge-partial';
-                        $badgeText = 'Faltan ' . $day['remainingHours'] . 'h';
+                        $tagClass = 'tag-partial';
+                        $tagText = '-' . $day['remainingHours'] . 'h';
                     } else {
-                        $badgeClass = 'badge-empty';
-                        $badgeText = 'Sin registro';
+                        $tagClass = 'tag-empty';
+                        $tagText = 'Sin registro';
                     }
                 ?>
-                <div class="day-section">
-                    <div class="day-header" onclick="this.parentElement.querySelector('.day-body').classList.toggle('collapsed')">
-                        <div class="day-title">
-                            <?= htmlspecialchars($day['dayName']) ?> &mdash; <?= $day['date'] ?>
-                            <span class="day-badge <?= $badgeClass ?>"><?= $badgeText ?></span>
+                <div class="day">
+                    <div class="day-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+                        <div class="day-label">
+                            <?= htmlspecialchars($day['dayName']) ?> <?= date('d/m', strtotime($day['date'])) ?>
+                            <span class="tag <?= $tagClass ?>"><?= $tagText ?></span>
                         </div>
-                        <div class="day-hours">
-                            <strong><?= $day['totalHours'] ?>h</strong> / <?= $day['expectedHours'] ?>h
+                        <div class="day-hrs">
+                            <strong><?= $day['totalHours'] ?></strong> / <?= $day['expectedHours'] ?>h
                         </div>
                     </div>
-                    <div class="day-body">
+                    <div class="day-content" <?= empty($day['worklogs']) && $day['isWeekend'] ? 'style="display:none"' : '' ?>>
                         <?php if (!empty($day['worklogs'])): ?>
-                            <table class="worklog-table">
+                            <table>
                                 <thead>
                                     <tr>
-                                        <th>Tarea</th>
+                                        <th>Clave</th>
                                         <th>Proyecto</th>
                                         <th>Descripci&oacute;n</th>
                                         <th>Estado</th>
-                                        <th>Hora</th>
+                                        <th>Inicio</th>
                                         <th>Tiempo</th>
                                     </tr>
                                 </thead>
@@ -525,25 +439,23 @@
                                     <?php foreach ($day['worklogs'] as $wl): ?>
                                         <tr>
                                             <td>
-                                                <a class="issue-key"
+                                                <a class="key-link"
                                                    href="<?= htmlspecialchars($jiraBaseUrl) ?>/browse/<?= htmlspecialchars($wl['issueKey']) ?>"
                                                    target="_blank">
                                                     <?= htmlspecialchars($wl['issueKey']) ?>
                                                 </a>
                                             </td>
                                             <td><?= htmlspecialchars($wl['project']) ?></td>
-                                            <td><?= htmlspecialchars(mb_strimwidth($wl['summary'], 0, 60, '...')) ?></td>
-                                            <td><span class="status-badge"><?= htmlspecialchars($wl['status']) ?></span></td>
-                                            <td class="time-cell"><?= $wl['started'] ?></td>
-                                            <td class="time-cell"><?= htmlspecialchars($wl['timeSpent']) ?></td>
+                                            <td><?= htmlspecialchars(mb_strimwidth($wl['summary'], 0, 55, '...')) ?></td>
+                                            <td><span class="status-tag"><?= htmlspecialchars($wl['status']) ?></span></td>
+                                            <td class="mono"><?= $wl['started'] ?></td>
+                                            <td class="mono"><?= htmlspecialchars($wl['timeSpent']) ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         <?php else: ?>
-                            <div class="empty-day">
-                                <?= $day['isWeekend'] ? 'Fin de semana' : 'No hay horas registradas este d&iacute;a' ?>
-                            </div>
+                            <div class="no-data"><?= $day['isWeekend'] ? 'Descanso' : 'Sin horas registradas' ?></div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -552,132 +464,114 @@
     <?php endif; ?>
 </div>
 
-<!-- Settings Modal -->
-<div class="modal-overlay" id="settingsModal">
-    <div class="modal">
-        <h2>Configuraci&oacute;n de Jira</h2>
-        <p class="subtitle">Las credenciales se guardan en tu navegador (localStorage) y se env&iacute;an como cookies al servidor.</p>
-
-        <div class="form-group">
-            <label for="cfg-url">URL de Jira</label>
-            <input type="url" id="cfg-url" placeholder="https://miempresa.atlassian.net">
-            <div class="hint">La URL base de tu instancia de Jira Cloud</div>
+<div class="overlay" id="cfgModal">
+    <div class="dialog">
+        <h2>Configuraci&oacute;n</h2>
+        <div class="field">
+            <label>Jira</label>
+            <input type="text" value="<?= htmlspecialchars($jiraBaseUrl) ?>" readonly
+                   style="background:#f5f5f5; color:#999; cursor:default;">
         </div>
-
-        <div class="form-group">
+        <div class="field">
             <label for="cfg-email">Email</label>
             <input type="email" id="cfg-email" placeholder="tu@email.com">
-            <div class="hint">El email con el que inicias sesi&oacute;n en Jira</div>
         </div>
-
-        <div class="form-group">
+        <div class="field">
             <label for="cfg-token">API Token</label>
-            <input type="password" id="cfg-token" placeholder="Tu API token de Jira">
-            <div class="hint">
-                Genera uno en
-                <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" style="color: var(--info);">
-                    id.atlassian.com/manage-profile/security/api-tokens
-                </a>
+            <div style="position:relative;">
+                <input type="password" id="cfg-token" placeholder="Pega aqu&iacute; tu token">
+                <span id="token-indicator"></span>
+            </div>
+            <div class="note">
+                Obt&eacute;n uno en <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">id.atlassian.com</a>
             </div>
         </div>
-
-        <div class="modal-actions">
-            <button class="btn-danger-sm" onclick="clearCredentials()">Borrar datos</button>
-            <div style="flex: 1;"></div>
-            <button class="btn btn-ghost" onclick="closeSettings()">Cancelar</button>
-            <button class="btn btn-primary" onclick="saveSettings()">Guardar y conectar</button>
+        <div class="dialog-footer">
+            <button class="btn-sm danger" onclick="clearCfg()">Borrar</button>
+            <div style="flex:1"></div>
+            <button class="btn-sm" onclick="closeCfg()">Cancelar</button>
+            <button class="btn-sm primary" onclick="saveCfg()">Guardar</button>
         </div>
     </div>
 </div>
 
 <script>
-const STORAGE_KEYS = {
-    url: 'jira_base_url',
-    email: 'jira_email',
-    token: 'jira_token'
-};
+(function() {
+    var LS_EMAIL = 'jira_email';
+    var LS_TOKEN = 'jira_token';
 
-function syncLocalStorageToCookies() {
-    const url = localStorage.getItem(STORAGE_KEYS.url) || '';
-    const email = localStorage.getItem(STORAGE_KEYS.email) || '';
-    const token = localStorage.getItem(STORAGE_KEYS.token) || '';
-
-    const maxAge = 365 * 24 * 60 * 60;
-    const opts = `;path=/;max-age=${maxAge};SameSite=Lax`;
-
-    document.cookie = `jira_base_url=${encodeURIComponent(url)}${opts}`;
-    document.cookie = `jira_email=${encodeURIComponent(email)}${opts}`;
-    document.cookie = `jira_token=${encodeURIComponent(token)}${opts}`;
-}
-
-function getCookie(name) {
-    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-    return match ? decodeURIComponent(match[2]) : '';
-}
-
-function loadSettingsToForm() {
-    document.getElementById('cfg-url').value = localStorage.getItem(STORAGE_KEYS.url) || '';
-    document.getElementById('cfg-email').value = localStorage.getItem(STORAGE_KEYS.email) || '';
-    document.getElementById('cfg-token').value = localStorage.getItem(STORAGE_KEYS.token) || '';
-}
-
-function openSettings() {
-    loadSettingsToForm();
-    document.getElementById('settingsModal').classList.add('active');
-    document.getElementById('cfg-url').focus();
-}
-
-function closeSettings() {
-    document.getElementById('settingsModal').classList.remove('active');
-}
-
-function saveSettings() {
-    const url = document.getElementById('cfg-url').value.trim().replace(/\/+$/, '');
-    const email = document.getElementById('cfg-email').value.trim();
-    const token = document.getElementById('cfg-token').value.trim();
-
-    if (!url || !email || !token) {
-        alert('Todos los campos son requeridos');
-        return;
+    function setCookie(name, value) {
+        var opts = ';path=/;max-age=' + (365 * 86400) + ';SameSite=Lax';
+        document.cookie = name + '=' + encodeURIComponent(value) + opts;
     }
 
-    localStorage.setItem(STORAGE_KEYS.url, url);
-    localStorage.setItem(STORAGE_KEYS.email, email);
-    localStorage.setItem(STORAGE_KEYS.token, token);
+    function deleteCookie(name) {
+        document.cookie = name + '=;path=/;max-age=0';
+    }
 
-    syncLocalStorageToCookies();
-    location.reload();
-}
+    function loadForm() {
+        var savedEmail = localStorage.getItem(LS_EMAIL) || '';
+        var savedToken = localStorage.getItem(LS_TOKEN) || '';
+        var serverEmail = document.querySelector('.container').dataset.cfgEmail || '';
+        var serverHasToken = document.querySelector('.container').dataset.hasToken === '1';
 
-function clearCredentials() {
-    if (!confirm('Se borrar\u00e1n las credenciales guardadas. \u00bfContinuar?')) return;
+        document.getElementById('cfg-email').value = savedEmail || serverEmail;
+        document.getElementById('cfg-token').value = savedToken;
 
-    Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+        var ind = document.getElementById('token-indicator');
+        ind.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:0.7rem;';
+        if (savedToken) {
+            ind.textContent = 'Guardado';
+            ind.style.color = '#16793a';
+        } else if (serverHasToken) {
+            ind.textContent = 'Activo (.env)';
+            ind.style.color = '#0052cc';
+        } else {
+            ind.textContent = 'Sin token';
+            ind.style.color = '#c33';
+        }
+    }
 
-    const opts = ';path=/;max-age=0';
-    document.cookie = `jira_base_url=${opts}`;
-    document.cookie = `jira_email=${opts}`;
-    document.cookie = `jira_token=${opts}`;
+    window.openSettings = function() {
+        loadForm();
+        document.getElementById('cfgModal').classList.add('active');
+        document.getElementById('cfg-email').focus();
+    };
 
-    location.reload();
-}
+    window.closeCfg = function() {
+        document.getElementById('cfgModal').classList.remove('active');
+    };
 
-document.getElementById('settingsModal').addEventListener('click', function(e) {
-    if (e.target === this) closeSettings();
-});
+    window.saveCfg = function() {
+        var email = document.getElementById('cfg-email').value.trim();
+        var token = document.getElementById('cfg-token').value.trim();
 
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeSettings();
-});
+        if (!email) { alert('El email es requerido.'); return; }
+        if (!token) { alert('El API token es requerido.'); return; }
 
-(function bootSync() {
-    const lsUrl = localStorage.getItem(STORAGE_KEYS.url) || '';
-    const cookieUrl = getCookie('jira_base_url');
-
-    if (lsUrl && lsUrl !== cookieUrl) {
-        syncLocalStorageToCookies();
+        localStorage.setItem(LS_EMAIL, email);
+        localStorage.setItem(LS_TOKEN, token);
+        setCookie(LS_EMAIL, email);
+        setCookie(LS_TOKEN, token);
         location.reload();
-    }
+    };
+
+    window.clearCfg = function() {
+        if (!confirm('Se borrar\u00e1n las credenciales del navegador. \u00bfContinuar?')) return;
+        localStorage.removeItem(LS_EMAIL);
+        localStorage.removeItem(LS_TOKEN);
+        deleteCookie(LS_EMAIL);
+        deleteCookie(LS_TOKEN);
+        location.reload();
+    };
+
+    document.getElementById('cfgModal').addEventListener('click', function(e) {
+        if (e.target === this) closeCfg();
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeCfg();
+    });
 })();
 </script>
 </body>

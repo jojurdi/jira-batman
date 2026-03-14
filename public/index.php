@@ -13,10 +13,15 @@ $timezone = $_ENV['TIMEZONE'] ?? 'America/Mexico_City';
 $hoursPerDay = (float) ($_ENV['HOURS_PER_DAY'] ?? 8);
 date_default_timezone_set($timezone);
 
-$jiraBaseUrl = $_COOKIE['jira_base_url'] ?? $_ENV['JIRA_BASE_URL'] ?? '';
-$jiraEmail = $_COOKIE['jira_email'] ?? $_ENV['JIRA_EMAIL'] ?? '';
-$jiraToken = $_COOKIE['jira_token'] ?? $_ENV['JIRA_API_TOKEN'] ?? '';
-$needsSetup = empty($jiraBaseUrl) || empty($jiraEmail) || empty($jiraToken);
+$jiraBaseUrl = 'https://sibamex.atlassian.net';
+
+$cookieEmail = isset($_COOKIE['jira_email']) && $_COOKIE['jira_email'] !== '' ? $_COOKIE['jira_email'] : null;
+$cookieToken = isset($_COOKIE['jira_token']) && $_COOKIE['jira_token'] !== '' ? $_COOKIE['jira_token'] : null;
+
+$jiraEmail = $cookieEmail ?? ($_ENV['JIRA_EMAIL'] ?? '');
+$jiraToken = $cookieToken ?? ($_ENV['JIRA_API_TOKEN'] ?? '');
+$hasToken = !empty($jiraToken);
+$needsSetup = empty($jiraEmail) || empty($jiraToken);
 
 $rangeType = $_GET['range'] ?? 'month';
 $customStart = $_GET['start'] ?? null;

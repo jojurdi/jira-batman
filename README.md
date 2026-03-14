@@ -22,30 +22,27 @@ cd jira-batman
 composer install
 ```
 
-### 3. Configurar variables de entorno
+### 3. Variables de entorno (opcional)
 
-Copia el archivo de ejemplo y edítalo con tus datos:
+Solo necesitas `.env` si quieres cambiar zona horaria u horas por día:
 
 ```bash
 cp .env.example .env
 ```
 
-Edita `.env` y configura:
-
 | Variable        | Descripción |
 |----------------|-------------|
-| `JIRA_BASE_URL` | URL de tu instancia Jira (ej: `https://tu-empresa.atlassian.net`) |
-| `JIRA_EMAIL`    | Email de tu cuenta de Jira/Atlassian |
-| `JIRA_API_TOKEN`| Token de API de Atlassian (ver más abajo) |
-| `TIMEZONE`      | Zona horaria (ej: `America/Mexico_City`) |
-| `HOURS_PER_DAY` | Horas por día para el cálculo de jornada (por defecto: 8) |
+| `TIMEZONE`     | Zona horaria (ej: `America/Mexico_City`) |
+| `HOURS_PER_DAY`| Horas por día para el cálculo de jornada (por defecto: 8) |
+
+**Las credenciales de Jira** (URL, email y API token) no van en `.env`. Se configuran en la aplicación y se guardan en **localStorage** del navegador (y se envían al servidor vía cookies en cada petición).
 
 ### 4. Obtener el API Token de Jira
 
 1. Entra en [Atlassian Account Settings](https://id.atlassian.com/manage-profile/security/api-tokens).
 2. Inicia sesión con tu cuenta de Atlassian.
 3. Pulsa **Create API token**, pon un nombre (ej: "Batman Worklog") y copia el token.
-4. Pega el valor en `JIRA_API_TOKEN` en tu `.env`. No lo compartas ni lo subas al repositorio.
+4. La primera vez que uses la app, abre **Configurar** y pega ahí la URL de Jira, tu email y el token. Se guardarán en localStorage.
 
 ### 5. Servidor web
 
@@ -86,14 +83,14 @@ server {
 ## Uso
 
 1. Abre en el navegador la URL donde está desplegada la app (ej: `http://localhost:8080` o tu dominio).
-2. Si no configuraste `.env`, la primera vez te pedirá **configuración** (URL de Jira, email y API token). Puedes guardarlos en cookies desde la interfaz para no usar `.env`.
+2. La primera vez pulsa **Configurar** e introduce la URL de Jira, tu email y el API token. Se guardan en **localStorage** (y se envían al servidor vía cookies).
 3. El reporte muestra por defecto el **mes actual**. Puedes cambiar el rango con los filtros:
    - **Hoy** – solo el día actual.
    - **Semana** – lunes a viernes de la semana actual (hasta hoy).
    - **Mes** – desde el día 1 del mes hasta hoy.
    - **Personalizado** – elige fechas de inicio y fin.
 4. En la parte superior verás el resumen (total de horas, diferencia frente a la jornada configurada) y, día a día, los worklogs con issue, resumen, proyecto y tiempo.
-5. El botón de **configuración** (engranaje) permite cambiar credenciales y guardarlas en cookies sin tocar el `.env`.
+5. El botón de **configuración** (engranaje) permite cambiar o borrar credenciales (se guardan en localStorage).
 
 ## Estructura del proyecto
 
@@ -114,10 +111,8 @@ jira-batman/
 
 ## Seguridad
 
-- No subas el archivo `.env` al repositorio (está en `.gitignore`).
+- Las credenciales viven en **localStorage** del navegador (no en `.env`). El servidor las recibe vía cookies en cada petición.
 - No expongas la carpeta raíz del proyecto como document root; solo `public/`.
-- El API token tiene los mismos permisos que tu usuario en Jira; trátalo como una contraseña.
+- El API token tiene los mismos permisos que tu usuario en Jira; no lo compartas.
 
-## Licencia
 
-Proyecto de uso interno / según la política de tu organización.
