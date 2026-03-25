@@ -436,7 +436,7 @@
         .tab-btn:hover { color: #555; }
         .tab-btn.active { color: #333; font-weight: 600; border-bottom-color: #333; }
 
-        .matrix-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+        .matrix-wrap { overflow-x: auto; overflow-y: auto; max-height: 70vh; margin-bottom: 1.5rem; }
 
         .matrix-table {
             border-collapse: collapse;
