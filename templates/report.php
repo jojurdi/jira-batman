@@ -402,6 +402,18 @@
 
         .btn-edit-wl:hover { color: #0052cc; }
 
+        .btn-del-wl {
+            background: none;
+            border: none;
+            color: #ddd;
+            cursor: pointer;
+            padding: 0 0.2rem;
+            font-size: 0.85rem;
+            line-height: 1;
+        }
+
+        .btn-del-wl:hover { color: #c33; }
+
         @media (max-width: 640px) {
             .container { padding: 1rem; }
             header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
@@ -622,11 +634,14 @@
                                             <td><span class="status-tag"><?= htmlspecialchars($wl['status']) ?></span></td>
                                             <td class="mono"><?= $wl['started'] ?></td>
                                             <td class="mono"><?= htmlspecialchars($wl['timeSpent']) ?></td>
-                                            <td>
+                                            <td style="white-space:nowrap;">
                                                 <?php if ($wl['id']): ?>
                                                 <button class="btn-edit-wl"
                                                         onclick="openEditWorklog(event,'<?= htmlspecialchars($wl['issueKey']) ?>','<?= htmlspecialchars($wl['id']) ?>','<?= $day['date'] ?>','<?= $wl['started'] ?>','<?= htmlspecialchars($wl['timeSpent']) ?>')"
                                                         title="Editar">&#9998;</button>
+                                                <button class="btn-del-wl"
+                                                        onclick="deleteWorklog(event,'<?= htmlspecialchars($wl['issueKey']) ?>','<?= htmlspecialchars($wl['id']) ?>','<?= htmlspecialchars($wl['timeSpent']) ?>')"
+                                                        title="Eliminar">&#10005;</button>
                                                 <?php endif; ?>
                                             </td>
                                         </tr>
@@ -1029,6 +1044,63 @@ var JIRA_BASE_URL = '<?= htmlspecialchars($jiraBaseUrl) ?>';
             btn.disabled = false;
             btn.textContent = mode === 'edit' ? 'Guardar' : 'Registrar';
         });
+    };
+
+    window.deleteWorklog = function(e, issueKey, worklogId, timeSpent) {
+        e.stopPropagation();
+        if (!confirm('¿Eliminar el registro de ' + timeSpent + ' en ' + issueKey + '?')) return;
+
+        var row = document.querySelector('tr[data-wl-id="' + worklogId + '"]');
+
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete_worklog', issueKey: issueKey, worklogId: worklogId })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.ok) {
+                if (!row) return;
+                var oldSec     = parseInt(row.dataset.wlSeconds || 0);
+                var dayContent = row.closest('.day-content');
+                var dayHead    = row.closest('.day').querySelector('.day-head');
+                row.remove();
+
+                // Actualizar total del día
+                var remaining = dayContent.querySelectorAll('tr[data-wl-id]');
+                if (remaining.length === 0) {
+                    var tbody = dayContent.querySelector('tbody');
+                    if (tbody) {
+                        tbody.closest('table').remove();
+                        var noData = document.createElement('div');
+                        noData.className = 'no-data';
+                        noData.textContent = 'Sin horas registradas';
+                        dayContent.appendChild(noData);
+                    }
+                }
+                var totalSec = 0;
+                dayContent.querySelectorAll('tr[data-wl-id]').forEach(function(r) {
+                    totalSec += parseInt(r.dataset.wlSeconds || 0);
+                });
+                var totalHours    = fmtHours(totalSec);
+                var dayHrsEl      = dayHead.querySelector('.day-hrs');
+                var expectedHours = parseFloat(dayHrsEl.textContent.split('/')[1]) || 8;
+                dayHrsEl.querySelector('strong').textContent = totalHours;
+
+                var tag = dayHead.querySelector('.tag');
+                if (totalHours >= expectedHours) {
+                    tag.className = 'tag tag-ok'; tag.textContent = 'Completo';
+                } else if (totalHours > 0) {
+                    var rem = Math.round((expectedHours - totalHours) * 100) / 100;
+                    tag.className = 'tag tag-partial'; tag.textContent = '-' + rem + 'h';
+                } else {
+                    tag.className = 'tag tag-empty'; tag.textContent = 'Sin registro';
+                }
+            } else {
+                alert('Error al eliminar: ' + (data.error || 'Error desconocido'));
+            }
+        })
+        .catch(function() { alert('Error de conexión'); });
     };
 
     function showWlError(msg) {

@@ -166,4 +166,36 @@ class JiraClient
             'timeSpentSeconds' => $timeSpentSeconds,
         ]);
     }
+
+    public function deleteWorklog(string $issueKey, string $worklogId): void
+    {
+        $url = $this->baseUrl . "/rest/api/3/issue/{$issueKey}/worklog/{$worklogId}";
+
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST  => 'DELETE',
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: ' . $this->authHeader,
+                'Accept: application/json',
+            ],
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error    = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            throw new \RuntimeException("Error de cURL: {$error}");
+        }
+        if ($httpCode >= 400) {
+            $body = json_decode($response, true);
+            $msg  = $body['errorMessages'][0] ?? $body['message'] ?? "HTTP {$httpCode}";
+            throw new \RuntimeException("Error de Jira API ({$httpCode}): {$msg}");
+        }
+    }
 }

@@ -157,7 +157,7 @@ class WorklogReport
             foreach ($day['worklogs'] as $wl) {
                 $k = $wl['issueKey'];
                 if (!isset($issueMap[$k])) {
-                    $epicKey  = $issueEpicKeys[$k] ?? null;
+                    $epicKey = $issueEpicKeys[$k] ?? null;
                     $issueMap[$k] = [
                         'issueKey'          => $k,
                         'summary'           => $wl['summary'],
@@ -173,57 +173,68 @@ class WorklogReport
                 $issueMap[$k]['totalSeconds'] += $wl['timeSpentSeconds'];
             }
         }
-        foreach ($issueMap as &$iss) {
-            $iss['totalHours'] = round($iss['totalSeconds'] / 3600, 2);
+        foreach ($issueMap as $mk => $iss) {
+            $issueMap[$mk]['totalHours'] = round($iss['totalSeconds'] / 3600, 2);
         }
-        unset($iss);
 
-        // Construir jerarquía: iniciativa → épica → historia
-        $hierarchy = [];
+        // Construir jerarquía usando copias (sin referencias)
+        $rawHier = [];
         foreach ($issueMap as $iss) {
             $initKey   = $iss['initiativeKey']     ?? '_none';
             $initLabel = $iss['initiativeSummary'] ?? 'Sin iniciativa';
             $epicKey   = $iss['epicKey']           ?? '_none';
             $epicLabel = $iss['epicSummary']       ?? 'Sin épica';
 
-            if (!isset($hierarchy[$initKey])) {
-                $hierarchy[$initKey] = [
+            if (!isset($rawHier[$initKey])) {
+                $rawHier[$initKey] = [
                     'key'          => $initKey === '_none' ? null : $initKey,
                     'summary'      => $initLabel,
                     'totalSeconds' => 0,
                     'epics'        => [],
                 ];
             }
-            if (!isset($hierarchy[$initKey]['epics'][$epicKey])) {
-                $hierarchy[$initKey]['epics'][$epicKey] = [
+            if (!isset($rawHier[$initKey]['epics'][$epicKey])) {
+                $rawHier[$initKey]['epics'][$epicKey] = [
                     'key'          => $epicKey === '_none' ? null : $epicKey,
                     'summary'      => $epicLabel,
                     'totalSeconds' => 0,
                     'issues'       => [],
                 ];
             }
-            $hierarchy[$initKey]['epics'][$epicKey]['issues'][]      = $iss;
-            $hierarchy[$initKey]['epics'][$epicKey]['totalSeconds']  += $iss['totalSeconds'];
-            $hierarchy[$initKey]['totalSeconds']                     += $iss['totalSeconds'];
+            $rawHier[$initKey]['epics'][$epicKey]['issues'][]     = $iss;
+            $rawHier[$initKey]['epics'][$epicKey]['totalSeconds'] += $iss['totalSeconds'];
+            $rawHier[$initKey]['totalSeconds']                    += $iss['totalSeconds'];
         }
 
-        usort($hierarchy, fn($a, $b) => $b['totalSeconds'] - $a['totalSeconds']);
-        foreach ($hierarchy as &$init) {
-            $init['totalHours'] = round($init['totalSeconds'] / 3600, 2);
-            usort($init['epics'], fn($a, $b) => $b['totalSeconds'] - $a['totalSeconds']);
-            foreach ($init['epics'] as &$epic) {
-                $epic['totalHours'] = round($epic['totalSeconds'] / 3600, 2);
-                usort($epic['issues'], fn($a, $b) => $b['totalSeconds'] - $a['totalSeconds']);
-                $epic['epics'] = array_values($epic['epics'] ?? []);
+        // Ordenar y aplanar sin referencias
+        $byHierarchy = [];
+        foreach ($rawHier as $init) {
+            $epics = [];
+            foreach ($init['epics'] as $epic) {
+                $issues = $epic['issues'];
+                usort($issues, fn($a, $b) => $b['totalSeconds'] - $a['totalSeconds']);
+                $epics[] = [
+                    'key'          => $epic['key'],
+                    'summary'      => $epic['summary'],
+                    'totalSeconds' => $epic['totalSeconds'],
+                    'totalHours'   => round($epic['totalSeconds'] / 3600, 2),
+                    'issues'       => $issues,
+                ];
             }
-            unset($epic);
-            $init['epics'] = array_values($init['epics']);
+            usort($epics, fn($a, $b) => $b['totalSeconds'] - $a['totalSeconds']);
+            $byHierarchy[] = [
+                'key'          => $init['key'],
+                'summary'      => $init['summary'],
+                'totalSeconds' => $init['totalSeconds'],
+                'totalHours'   => round($init['totalSeconds'] / 3600, 2),
+                'epics'        => $epics,
+            ];
         }
-        unset($init);
+        usort($byHierarchy, fn($a, $b) => $b['totalSeconds'] - $a['totalSeconds']);
 
         return [
             'days'        => array_values($dayMap),
-            'byHierarchy' => array_values($hierarchy),
+            'byHierarchy' => $byHierarchy,
             'summary' => [
                 'startDate' => $startDate,
                 'endDate' => $endDate,

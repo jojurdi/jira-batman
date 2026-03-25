@@ -152,6 +152,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['ok' => true]);
             exit;
         }
+        if ($action === 'delete_worklog') {
+            $issueKey  = strtoupper(trim($body['issueKey'] ?? ''));
+            $worklogId = trim($body['worklogId'] ?? '');
+
+            if (!$issueKey || !$worklogId) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Faltan datos requeridos']);
+                exit;
+            }
+
+            $client->deleteWorklog($issueKey, $worklogId);
+            echo json_encode(['ok' => true]);
+            exit;
+        }
         http_response_code(400);
         echo json_encode(['error' => 'Acción desconocida']);
     } catch (\Throwable $e) {
