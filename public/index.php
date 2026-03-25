@@ -48,7 +48,7 @@ switch ($rangeType) {
     case 'month':
     default:
         $rangeType = 'month';
-        $startDate = $today->format('Y-m-01');
+        $startDate = (clone $today)->modify('-1 month')->format('Y-m-d');
         $endDate = $today->format('Y-m-d');
         break;
 }
@@ -68,4 +68,99 @@ if (!$needsSetup) {
     }
 }
 
+// Manejar peticiones AJAX POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    if ($needsSetup) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Sin credenciales configuradas']);
+        exit;
+    }
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
+    $action = $body['action'] ?? '';
+    try {
+        $client = new JiraClient($jiraBaseUrl, $jiraEmail, $jiraToken);
+        if ($action === 'add_worklog') {
+            $issueKey = strtoupper(trim($body['issueKey'] ?? ''));
+            $date     = $body['date'] ?? '';
+            $time     = $body['time'] ?? '09:00';
+            $duration = trim($body['duration'] ?? '');
+
+            if (!$issueKey || !$date || !$duration) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Faltan datos requeridos']);
+                exit;
+            }
+
+            $seconds = 0;
+            if (preg_match('/(\d+(?:\.\d+)?)\s*h/i', $duration, $m)) {
+                $seconds += (int) round((float) $m[1] * 3600);
+            }
+            if (preg_match('/(\d+)\s*m/i', $duration, $m)) {
+                $seconds += (int) $m[1] * 60;
+            }
+            if ($seconds <= 0) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Duración inválida. Usa formato como "2h 30m", "1h" o "45m"']);
+                exit;
+            }
+
+            $dt      = new DateTime($date . ' ' . $time, new DateTimeZone($timezone));
+            $started = $dt->format('Y-m-d\TH:i:s.000O');
+
+            $wlResult = $client->addWorklog($issueKey, $started, $seconds);
+            $issue    = $client->getIssue($issueKey);
+            echo json_encode([
+                'ok'        => true,
+                'worklogId' => $wlResult['id'] ?? '',
+                'summary'   => $issue['fields']['summary'] ?? '',
+                'project'   => $issue['fields']['project']['name'] ?? '',
+                'status'    => $issue['fields']['status']['name'] ?? '',
+            ]);
+            exit;
+        }
+        if ($action === 'update_worklog') {
+            $issueKey  = strtoupper(trim($body['issueKey'] ?? ''));
+            $worklogId = trim($body['worklogId'] ?? '');
+            $date      = $body['date'] ?? '';
+            $time      = $body['time'] ?? '09:00';
+            $duration  = trim($body['duration'] ?? '');
+
+            if (!$issueKey || !$worklogId || !$date || !$duration) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Faltan datos requeridos']);
+                exit;
+            }
+
+            $seconds = 0;
+            if (preg_match('/(\d+(?:\.\d+)?)\s*h/i', $duration, $m)) {
+                $seconds += (int) round((float) $m[1] * 3600);
+            }
+            if (preg_match('/(\d+)\s*m/i', $duration, $m)) {
+                $seconds += (int) $m[1] * 60;
+            }
+            if ($seconds <= 0) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Duración inválida. Usa formato como "2h 30m", "1h" o "45m"']);
+                exit;
+            }
+
+            $dt      = new DateTime($date . ' ' . $time, new DateTimeZone($timezone));
+            $started = $dt->format('Y-m-d\TH:i:s.000O');
+
+            $client->updateWorklog($issueKey, $worklogId, $started, $seconds);
+            echo json_encode(['ok' => true]);
+            exit;
+        }
+        http_response_code(400);
+        echo json_encode(['error' => 'Acción desconocida']);
+    } catch (\Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Pragma: no-cache');
 require __DIR__ . '/../templates/report.php';

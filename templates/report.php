@@ -313,6 +313,95 @@
         .setup-msg h2 { font-size: 1rem; color: #333; margin-bottom: 0.4rem; }
         .setup-msg p { font-size: 0.85rem; margin-bottom: 1rem; }
 
+        .hier-init {
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            margin-bottom: 0.35rem;
+            overflow: hidden;
+        }
+
+        .hier-init-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.55rem 0.9rem;
+            background: #f5f5f5;
+            cursor: pointer;
+            user-select: none;
+            font-weight: 600;
+            font-size: 0.83rem;
+            color: #333;
+        }
+
+        .hier-init-head:hover { background: #eeeeee; }
+
+        .hier-epic {
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .hier-epic-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.45rem 0.9rem 0.45rem 2rem;
+            background: #fafafa;
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.8rem;
+            color: #555;
+        }
+
+        .hier-epic-head:hover { background: #f5f5f5; }
+
+        .hier-epic-body table { margin: 0; }
+
+        .hier-epic-body td, .hier-epic-body th {
+            padding-left: 2.5rem;
+        }
+
+        .hier-epic-body th:first-child,
+        .hier-epic-body td:first-child { padding-left: 2.5rem; }
+
+        .hier-hrs {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.78rem;
+            color: #888;
+            white-space: nowrap;
+        }
+
+        .hier-hrs strong { color: #333; }
+
+        .btn-add-worklog {
+            background: none;
+            border: 1px solid #ddd;
+            color: #aaa;
+            width: 22px;
+            height: 22px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .btn-add-worklog:hover { border-color: #0052cc; color: #0052cc; background: #f0f4ff; }
+
+        .btn-edit-wl {
+            background: none;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            padding: 0 0.2rem;
+            font-size: 0.85rem;
+            line-height: 1;
+        }
+
+        .btn-edit-wl:hover { color: #0052cc; }
+
         @media (max-width: 640px) {
             .container { padding: 1rem; }
             header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
@@ -396,6 +485,81 @@
                 </div>
             </div>
 
+            <?php if (!empty($report['byHierarchy'])): ?>
+            <div class="section-head" onclick="toggleSection('byHier')" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0.4rem;user-select:none;">
+                <span style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#999;">Concentrado por jerarqu&iacute;a</span>
+                <span id="byHier-arrow" style="font-size:0.7rem;color:#bbb;">&#9650;</span>
+            </div>
+            <div id="byHier-body" style="margin-bottom:1.5rem;">
+                <?php foreach ($report['byHierarchy'] as $iIdx => $init): ?>
+                <div class="hier-init">
+                    <div class="hier-init-head" onclick="toggleHier('i<?= $iIdx ?>')">
+                        <span>
+                            <?php if ($init['key']): ?>
+                                <a class="key-link" href="<?= htmlspecialchars($jiraBaseUrl) ?>/browse/<?= htmlspecialchars($init['key']) ?>" target="_blank" onclick="event.stopPropagation()"><?= htmlspecialchars($init['key']) ?></a>
+                                &nbsp;&middot;&nbsp;
+                            <?php endif; ?>
+                            <?= htmlspecialchars($init['summary']) ?>
+                        </span>
+                        <span class="hier-hrs"><strong><?= $init['totalHours'] ?></strong>h</span>
+                    </div>
+                    <div id="hier-i<?= $iIdx ?>">
+                        <?php foreach ($init['epics'] as $eIdx => $epic): ?>
+                        <div class="hier-epic">
+                            <div class="hier-epic-head" onclick="toggleHier('i<?= $iIdx ?>e<?= $eIdx ?>')">
+                                <span>
+                                    <?php if ($epic['key']): ?>
+                                        <a class="key-link" href="<?= htmlspecialchars($jiraBaseUrl) ?>/browse/<?= htmlspecialchars($epic['key']) ?>" target="_blank" onclick="event.stopPropagation()"><?= htmlspecialchars($epic['key']) ?></a>
+                                        &nbsp;&middot;&nbsp;
+                                    <?php endif; ?>
+                                    <?= htmlspecialchars($epic['summary']) ?>
+                                </span>
+                                <span class="hier-hrs"><strong><?= $epic['totalHours'] ?></strong>h</span>
+                            </div>
+                            <div id="hier-i<?= $iIdx ?>e<?= $eIdx ?>" class="hier-epic-body">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Clave</th>
+                                            <th>Proyecto</th>
+                                            <th>Descripci&oacute;n</th>
+                                            <th>Estado</th>
+                                            <th style="text-align:right;">Horas</th>
+                                            <th style="text-align:right;min-width:90px;">%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($epic['issues'] as $iss): ?>
+                                            <?php $pct = $report['summary']['totalLogged'] > 0
+                                                ? round($iss['totalHours'] / $report['summary']['totalLogged'] * 100, 1)
+                                                : 0; ?>
+                                            <tr>
+                                                <td><a class="key-link" href="<?= htmlspecialchars($jiraBaseUrl) ?>/browse/<?= htmlspecialchars($iss['issueKey']) ?>" target="_blank"><?= htmlspecialchars($iss['issueKey']) ?></a></td>
+                                                <td><?= htmlspecialchars($iss['project']) ?></td>
+                                                <td><?= htmlspecialchars(mb_strimwidth($iss['summary'], 0, 55, '...')) ?></td>
+                                                <td><span class="status-tag"><?= htmlspecialchars($iss['status']) ?></span></td>
+                                                <td class="mono" style="text-align:right;"><?= $iss['totalHours'] ?>h</td>
+                                                <td style="text-align:right;">
+                                                    <div style="display:flex;align-items:center;gap:0.4rem;justify-content:flex-end;">
+                                                        <div style="flex:1;height:4px;background:#eee;border-radius:2px;min-width:40px;">
+                                                            <div style="height:100%;background:#333;border-radius:2px;width:<?= $pct ?>%;"></div>
+                                                        </div>
+                                                        <span style="font-size:0.75rem;color:#888;white-space:nowrap;"><?= $pct ?>%</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+
             <?php foreach ($report['days'] as $day): ?>
                 <?php
                     if ($day['isWeekend']) {
@@ -412,14 +576,21 @@
                         $tagText = 'Sin registro';
                     }
                 ?>
-                <div class="day">
-                    <div class="day-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+                <div class="day" data-date="<?= $day['date'] ?>">
+                    <div class="day-head" onclick="toggleDay(this)">
                         <div class="day-label">
                             <?= htmlspecialchars($day['dayName']) ?> <?= date('d/m', strtotime($day['date'])) ?>
                             <span class="tag <?= $tagClass ?>"><?= $tagText ?></span>
                         </div>
-                        <div class="day-hrs">
-                            <strong><?= $day['totalHours'] ?></strong> / <?= $day['expectedHours'] ?>h
+                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                            <div class="day-hrs">
+                                <strong><?= $day['totalHours'] ?></strong> / <?= $day['expectedHours'] ?>h
+                            </div>
+                            <?php if (!$day['isWeekend']): ?>
+                            <button class="btn-add-worklog"
+                                    onclick="openAddWorklog(event,'<?= $day['date'] ?>')"
+                                    title="Agregar registro">+</button>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="day-content" <?= empty($day['worklogs']) && $day['isWeekend'] ? 'style="display:none"' : '' ?>>
@@ -433,11 +604,12 @@
                                         <th>Estado</th>
                                         <th>Inicio</th>
                                         <th>Tiempo</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($day['worklogs'] as $wl): ?>
-                                        <tr>
+                                        <tr data-wl-id="<?= htmlspecialchars($wl['id']) ?>" data-wl-seconds="<?= (int)$wl['timeSpentSeconds'] ?>">
                                             <td>
                                                 <a class="key-link"
                                                    href="<?= htmlspecialchars($jiraBaseUrl) ?>/browse/<?= htmlspecialchars($wl['issueKey']) ?>"
@@ -450,6 +622,13 @@
                                             <td><span class="status-tag"><?= htmlspecialchars($wl['status']) ?></span></td>
                                             <td class="mono"><?= $wl['started'] ?></td>
                                             <td class="mono"><?= htmlspecialchars($wl['timeSpent']) ?></td>
+                                            <td>
+                                                <?php if ($wl['id']): ?>
+                                                <button class="btn-edit-wl"
+                                                        onclick="openEditWorklog(event,'<?= htmlspecialchars($wl['issueKey']) ?>','<?= htmlspecialchars($wl['id']) ?>','<?= $day['date'] ?>','<?= $wl['started'] ?>','<?= htmlspecialchars($wl['timeSpent']) ?>')"
+                                                        title="Editar">&#9998;</button>
+                                                <?php endif; ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -462,6 +641,40 @@
             <?php endforeach; ?>
         <?php endif; ?>
     <?php endif; ?>
+</div>
+
+<div class="overlay" id="addWorklogModal">
+    <div class="dialog">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h2 id="wl-title" style="margin-bottom:0;">Registrar tiempo</h2>
+            <button onclick="closeAddWorklog()" style="background:none;border:none;font-size:1.2rem;color:#aaa;cursor:pointer;line-height:1;padding:0 0.2rem;">&times;</button>
+        </div>
+        <input type="hidden" id="wl-mode" value="add">
+        <input type="hidden" id="wl-worklog-id" value="">
+        <div class="field">
+            <label for="wl-key">Clave de tarea</label>
+            <input type="text" id="wl-key" placeholder="PROJ-123" style="text-transform:uppercase">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem;">
+            <div class="field">
+                <label for="wl-date">Fecha</label>
+                <input type="date" id="wl-date">
+            </div>
+            <div class="field">
+                <label for="wl-time">Hora inicio</label>
+                <input type="time" id="wl-time" value="09:00">
+            </div>
+        </div>
+        <div class="field">
+            <label for="wl-duration">Duración</label>
+            <input type="text" id="wl-duration" placeholder="ej. 2h 30m  ·  1h  ·  45m">
+        </div>
+        <div id="wl-error" style="display:none;color:#c33;font-size:0.8rem;margin-top:0.25rem;"></div>
+        <div class="dialog-footer">
+            <button class="btn-sm" onclick="closeAddWorklog()">Cancelar</button>
+            <button class="btn-sm primary" id="wl-submit" onclick="submitWorklog()">Registrar</button>
+        </div>
+    </div>
 </div>
 
 <div class="overlay" id="cfgModal">
@@ -496,6 +709,7 @@
 </div>
 
 <script>
+var JIRA_BASE_URL = '<?= htmlspecialchars($jiraBaseUrl) ?>';
 (function() {
     var LS_EMAIL = 'jira_email';
     var LS_TOKEN = 'jira_token';
@@ -565,13 +779,263 @@
         location.reload();
     };
 
-    document.getElementById('cfgModal').addEventListener('click', function(e) {
-        if (e.target === this) closeCfg();
-    });
-
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeCfg();
     });
+
+    window.toggleHier = function(id) {
+        var el = document.getElementById('hier-' + id);
+        if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+    };
+
+    window.toggleSection = function(id) {
+        var body  = document.getElementById(id + '-body');
+        var arrow = document.getElementById(id + '-arrow');
+        var hidden = body.style.display === 'none';
+        body.style.display  = hidden ? '' : 'none';
+        arrow.innerHTML     = hidden ? '&#9650;' : '&#9660;';
+    };
+
+    window.toggleDay = function(head) {
+        var content = head.nextElementSibling;
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    };
+
+    function openWorklogModal(mode, issueKey, worklogId, date, time, duration) {
+        document.getElementById('wl-mode').value = mode;
+        document.getElementById('wl-worklog-id').value = worklogId || '';
+        document.getElementById('wl-key').value = issueKey || '';
+        document.getElementById('wl-key').readOnly = (mode === 'edit');
+        document.getElementById('wl-key').style.background = (mode === 'edit') ? '#f5f5f5' : '';
+        document.getElementById('wl-key').style.color = (mode === 'edit') ? '#999' : '';
+        document.getElementById('wl-date').value = date || '';
+        document.getElementById('wl-time').value = time || '09:00';
+        document.getElementById('wl-duration').value = duration || '';
+        document.getElementById('wl-error').style.display = 'none';
+        document.getElementById('wl-title').textContent = (mode === 'edit') ? 'Editar registro' : 'Registrar tiempo';
+        var btn = document.getElementById('wl-submit');
+        btn.disabled = false;
+        btn.textContent = (mode === 'edit') ? 'Guardar' : 'Registrar';
+        document.getElementById('addWorklogModal').classList.add('active');
+        setTimeout(function() {
+            var focus = (mode === 'edit') ? 'wl-duration' : 'wl-key';
+            document.getElementById(focus).focus();
+        }, 50);
+    }
+
+    window.openAddWorklog = function(e, date) {
+        e.stopPropagation();
+        openWorklogModal('add', '', '', date, '09:00', '');
+    };
+
+    window.openEditWorklog = function(e, issueKey, worklogId, date, time, duration) {
+        e.stopPropagation();
+        openWorklogModal('edit', issueKey, worklogId, date, time, duration);
+    };
+
+    window.closeAddWorklog = function() {
+        document.getElementById('addWorklogModal').classList.remove('active');
+    };
+
+    // Restaurar scroll si venimos de un add
+    (function() {
+        var y = sessionStorage.getItem('jb_scrollY');
+        if (y !== null) { window.scrollTo(0, parseInt(y)); sessionStorage.removeItem('jb_scrollY'); }
+    })();
+
+    function parseDurToSeconds(dur) {
+        var s = 0;
+        var h = dur.match(/(\d+(?:\.\d+)?)\s*h/i);
+        var m = dur.match(/(\d+)\s*m/i);
+        if (h) s += Math.round(parseFloat(h[1]) * 3600);
+        if (m) s += parseInt(m[1]) * 60;
+        return s;
+    }
+
+    function fmtTimeSpent(s) {
+        var h = Math.floor(s / 3600);
+        var m = Math.floor((s % 3600) / 60);
+        if (h && m) return h + 'h ' + m + 'm';
+        if (h) return h + 'h';
+        return m + 'm';
+    }
+
+    function fmtHours(s) {
+        return Math.round(s / 3600 * 100) / 100;
+    }
+
+    function updateWorklogInDOM(worklogId, newTime, durationStr) {
+        var row = document.querySelector('tr[data-wl-id="' + worklogId + '"]');
+        if (!row) return false;
+
+        var newSec = parseDurToSeconds(durationStr);
+        row.dataset.wlSeconds = newSec;
+        var cells = row.querySelectorAll('td');
+        cells[4].textContent = newTime;
+        cells[5].textContent = fmtTimeSpent(newSec);
+
+        // Recalcular total del día
+        var dayContent = row.closest('.day-content');
+        var dayHead    = dayContent.previousElementSibling;
+        var totalSec   = 0;
+        dayContent.querySelectorAll('tr[data-wl-id]').forEach(function(r) {
+            totalSec += parseInt(r.dataset.wlSeconds || 0);
+        });
+        var totalHours    = fmtHours(totalSec);
+        var dayHrsEl      = dayHead.querySelector('.day-hrs');
+        var expectedHours = parseFloat(dayHrsEl.textContent.split('/')[1]) || 8;
+        dayHrsEl.querySelector('strong').textContent = totalHours;
+
+        var tag = dayHead.querySelector('.tag');
+        if (totalHours >= expectedHours) {
+            tag.className = 'tag tag-ok'; tag.textContent = 'Completo';
+        } else if (totalHours > 0) {
+            var rem = Math.round((expectedHours - totalHours) * 100) / 100;
+            tag.className = 'tag tag-partial'; tag.textContent = '-' + rem + 'h';
+        } else {
+            tag.className = 'tag tag-empty'; tag.textContent = 'Sin registro';
+        }
+        return true;
+    }
+
+    function truncate(str, n) {
+        return str.length > n ? str.slice(0, n) + '...' : str;
+    }
+
+    function insertWorklogInDOM(data, date, time, durationStr) {
+        var dayEl = document.querySelector('.day[data-date="' + date + '"]');
+        if (!dayEl) {
+            // El día no está visible en el rango actual, recargar
+            window.location.href = window.location.pathname + window.location.search;
+            return;
+        }
+
+        var newSec     = parseDurToSeconds(durationStr);
+        var dayContent = dayEl.querySelector('.day-content');
+        var dayHead    = dayEl.querySelector('.day-head');
+
+        // Asegurar que el día está visible
+        dayContent.style.display = 'block';
+
+        // Crear tabla si no existe (día sin registros previos)
+        var tbody = dayContent.querySelector('tbody');
+        if (!tbody) {
+            dayContent.innerHTML =
+                '<table><thead><tr>' +
+                '<th>Clave</th><th>Proyecto</th><th>Descripci\u00f3n</th>' +
+                '<th>Estado</th><th>Inicio</th><th>Tiempo</th><th></th>' +
+                '</tr></thead><tbody></tbody></table>';
+            tbody = dayContent.querySelector('tbody');
+        }
+
+        var issueKey  = data.issueKey || '';
+        var editArgs  = [
+            "'" + issueKey + "'",
+            "'" + (data.worklogId || '') + "'",
+            "'" + date + "'",
+            "'" + time + "'",
+            "'" + durationStr.replace(/'/g, "\\'") + "'"
+        ].join(',');
+
+        var tr = document.createElement('tr');
+        tr.dataset.wlId      = data.worklogId || '';
+        tr.dataset.wlSeconds = newSec;
+        tr.innerHTML =
+            '<td><a class="key-link" href="' + JIRA_BASE_URL + '/browse/' + issueKey + '" target="_blank">' + issueKey + '</a></td>' +
+            '<td>' + (data.project || '') + '</td>' +
+            '<td>' + truncate(data.summary || '', 55) + '</td>' +
+            '<td><span class="status-tag">' + (data.status || '') + '</span></td>' +
+            '<td class="mono">' + time + '</td>' +
+            '<td class="mono">' + fmtTimeSpent(newSec) + '</td>' +
+            '<td>' + (data.worklogId ? '<button class="btn-edit-wl" onclick="openEditWorklog(event,' + editArgs + ')" title="Editar">&#9998;</button>' : '') + '</td>';
+
+        // Insertar en orden por hora
+        var rows = tbody.querySelectorAll('tr');
+        var inserted = false;
+        for (var i = 0; i < rows.length; i++) {
+            var rowTime = rows[i].querySelectorAll('td')[4].textContent;
+            if (time < rowTime) { tbody.insertBefore(tr, rows[i]); inserted = true; break; }
+        }
+        if (!inserted) tbody.appendChild(tr);
+
+        // Actualizar totales del día
+        var totalSec = 0;
+        tbody.querySelectorAll('tr[data-wl-id]').forEach(function(r) {
+            totalSec += parseInt(r.dataset.wlSeconds || 0);
+        });
+        var totalHours    = fmtHours(totalSec);
+        var dayHrsEl      = dayHead.querySelector('.day-hrs');
+        var expectedHours = parseFloat(dayHrsEl.textContent.split('/')[1]) || 8;
+        dayHrsEl.querySelector('strong').textContent = totalHours;
+
+        var tag = dayHead.querySelector('.tag');
+        if (totalHours >= expectedHours) {
+            tag.className = 'tag tag-ok'; tag.textContent = 'Completo';
+        } else if (totalHours > 0) {
+            var rem = Math.round((expectedHours - totalHours) * 100) / 100;
+            tag.className = 'tag tag-partial'; tag.textContent = '-' + rem + 'h';
+        } else {
+            tag.className = 'tag tag-empty'; tag.textContent = 'Sin registro';
+        }
+    }
+
+    window.submitWorklog = function() {
+        var mode     = document.getElementById('wl-mode').value;
+        var key      = document.getElementById('wl-key').value.trim().toUpperCase();
+        var date     = document.getElementById('wl-date').value;
+        var time     = document.getElementById('wl-time').value;
+        var duration = document.getElementById('wl-duration').value.trim();
+
+        if (!key)      { showWlError('Ingresa la clave de la tarea'); return; }
+        if (!date)     { showWlError('Selecciona la fecha'); return; }
+        if (!duration) { showWlError('Ingresa la duración'); return; }
+
+        document.getElementById('wl-error').style.display = 'none';
+        var btn = document.getElementById('wl-submit');
+        btn.disabled = true;
+        btn.textContent = mode === 'edit' ? 'Guardando...' : 'Registrando...';
+
+        var payload = { issueKey: key, date: date, time: time, duration: duration };
+        if (mode === 'edit') {
+            payload.action    = 'update_worklog';
+            payload.worklogId = document.getElementById('wl-worklog-id').value;
+        } else {
+            payload.action = 'add_worklog';
+        }
+
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.ok) {
+                closeAddWorklog();
+                if (mode === 'edit') {
+                    updateWorklogInDOM(payload.worklogId, time, duration);
+                } else {
+                    data.issueKey = key;
+                    insertWorklogInDOM(data, date, time, duration);
+                }
+            } else {
+                showWlError(data.error || 'Error desconocido');
+                btn.disabled = false;
+                btn.textContent = mode === 'edit' ? 'Guardar' : 'Registrar';
+            }
+        })
+        .catch(function() {
+            showWlError('Error de conexión');
+            btn.disabled = false;
+            btn.textContent = mode === 'edit' ? 'Guardar' : 'Registrar';
+        });
+    };
+
+    function showWlError(msg) {
+        var el = document.getElementById('wl-error');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
 })();
 </script>
 </body>

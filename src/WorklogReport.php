@@ -39,7 +39,7 @@ class WorklogReport
             $endDate
         );
 
-        $searchResult = $this->client->searchIssues($jql, 100);
+        $searchResult = $this->client->searchIssues($jql, 100, 'summary,worklog,status,project,parent,customfield_10014,issuetype');
         $issues = $searchResult['issues'] ?? [];
 
         $start = new \DateTime($startDate, $tz);
@@ -58,6 +58,37 @@ class WorklogReport
                 'worklogs' => [],
                 'totalSeconds' => 0,
             ];
+        }
+
+        // Recopilar claves de épicas para fetch en lote
+        $issueEpicKeys = [];
+        $epicKeysNeeded = [];
+        foreach ($issues as $issue) {
+            $k = $issue['key'];
+            $parentKey  = $issue['fields']['parent']['key'] ?? null;
+            $parentType = strtolower($issue['fields']['parent']['fields']['issuetype']['name'] ?? '');
+            $epicLink   = $issue['fields']['customfield_10014'] ?? null;
+            if ($parentType === 'epic' && $parentKey) {
+                $issueEpicKeys[$k] = $parentKey;
+                $epicKeysNeeded[$parentKey] = true;
+            } elseif ($epicLink) {
+                $issueEpicKeys[$k] = $epicLink;
+                $epicKeysNeeded[$epicLink] = true;
+            }
+        }
+
+        // Fetch de épicas en una sola llamada
+        $epicMeta = [];
+        if (!empty($epicKeysNeeded)) {
+            $epicJql    = 'issueKey in (' . implode(',', array_keys($epicKeysNeeded)) . ')';
+            $epicsResult = $this->client->searchIssues($epicJql, 200, 'summary,parent,issuetype');
+            foreach ($epicsResult['issues'] ?? [] as $epic) {
+                $epicMeta[$epic['key']] = [
+                    'summary'           => $epic['fields']['summary'] ?? $epic['key'],
+                    'initiativeKey'     => $epic['fields']['parent']['key'] ?? null,
+                    'initiativeSummary' => $epic['fields']['parent']['fields']['summary'] ?? null,
+                ];
+            }
         }
 
         foreach ($issues as $issue) {
@@ -84,6 +115,7 @@ class WorklogReport
 
                 $seconds = (int) ($wl['timeSpentSeconds'] ?? 0);
                 $dayMap[$dayKey]['worklogs'][] = [
+                    'id' => $wl['id'] ?? '',
                     'issueKey' => $issueKey,
                     'summary' => $summary,
                     'status' => $status,
@@ -119,8 +151,79 @@ class WorklogReport
         $totalLogged = round($totalLoggedSeconds / 3600, 2);
         $totalExpected = round($totalExpectedSeconds / 3600, 2);
 
+        // Agrupar por tarea con info de jerarquía
+        $issueMap = [];
+        foreach ($dayMap as $day) {
+            foreach ($day['worklogs'] as $wl) {
+                $k = $wl['issueKey'];
+                if (!isset($issueMap[$k])) {
+                    $epicKey  = $issueEpicKeys[$k] ?? null;
+                    $issueMap[$k] = [
+                        'issueKey'          => $k,
+                        'summary'           => $wl['summary'],
+                        'project'           => $wl['project'],
+                        'status'            => $wl['status'],
+                        'totalSeconds'      => 0,
+                        'epicKey'           => $epicKey,
+                        'epicSummary'       => $epicKey ? ($epicMeta[$epicKey]['summary'] ?? $epicKey) : null,
+                        'initiativeKey'     => $epicKey ? ($epicMeta[$epicKey]['initiativeKey'] ?? null) : null,
+                        'initiativeSummary' => $epicKey ? ($epicMeta[$epicKey]['initiativeSummary'] ?? null) : null,
+                    ];
+                }
+                $issueMap[$k]['totalSeconds'] += $wl['timeSpentSeconds'];
+            }
+        }
+        foreach ($issueMap as &$iss) {
+            $iss['totalHours'] = round($iss['totalSeconds'] / 3600, 2);
+        }
+        unset($iss);
+
+        // Construir jerarquía: iniciativa → épica → historia
+        $hierarchy = [];
+        foreach ($issueMap as $iss) {
+            $initKey   = $iss['initiativeKey']     ?? '_none';
+            $initLabel = $iss['initiativeSummary'] ?? 'Sin iniciativa';
+            $epicKey   = $iss['epicKey']           ?? '_none';
+            $epicLabel = $iss['epicSummary']       ?? 'Sin épica';
+
+            if (!isset($hierarchy[$initKey])) {
+                $hierarchy[$initKey] = [
+                    'key'          => $initKey === '_none' ? null : $initKey,
+                    'summary'      => $initLabel,
+                    'totalSeconds' => 0,
+                    'epics'        => [],
+                ];
+            }
+            if (!isset($hierarchy[$initKey]['epics'][$epicKey])) {
+                $hierarchy[$initKey]['epics'][$epicKey] = [
+                    'key'          => $epicKey === '_none' ? null : $epicKey,
+                    'summary'      => $epicLabel,
+                    'totalSeconds' => 0,
+                    'issues'       => [],
+                ];
+            }
+            $hierarchy[$initKey]['epics'][$epicKey]['issues'][]      = $iss;
+            $hierarchy[$initKey]['epics'][$epicKey]['totalSeconds']  += $iss['totalSeconds'];
+            $hierarchy[$initKey]['totalSeconds']                     += $iss['totalSeconds'];
+        }
+
+        usort($hierarchy, fn($a, $b) => $b['totalSeconds'] - $a['totalSeconds']);
+        foreach ($hierarchy as &$init) {
+            $init['totalHours'] = round($init['totalSeconds'] / 3600, 2);
+            usort($init['epics'], fn($a, $b) => $b['totalSeconds'] - $a['totalSeconds']);
+            foreach ($init['epics'] as &$epic) {
+                $epic['totalHours'] = round($epic['totalSeconds'] / 3600, 2);
+                usort($epic['issues'], fn($a, $b) => $b['totalSeconds'] - $a['totalSeconds']);
+                $epic['epics'] = array_values($epic['epics'] ?? []);
+            }
+            unset($epic);
+            $init['epics'] = array_values($init['epics']);
+        }
+        unset($init);
+
         return [
-            'days' => array_values($dayMap),
+            'days'        => array_values($dayMap),
+            'byHierarchy' => array_values($hierarchy),
             'summary' => [
                 'startDate' => $startDate,
                 'endDate' => $endDate,
