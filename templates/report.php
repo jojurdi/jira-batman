@@ -452,8 +452,10 @@
 
         .matrix-table .col-issue {
             text-align: left;
-            min-width: 180px;
-            max-width: 240px;
+            width: 200px;
+            max-width: 200px;
+            white-space: normal;
+            word-break: break-word;
             position: sticky;
             left: 0;
             background: #fff;
@@ -467,6 +469,9 @@
             color: #888;
             font-size: 0.68rem;
             line-height: 1.3;
+            position: sticky;
+            top: 0;
+            z-index: 2;
         }
 
         .matrix-table thead .col-issue { background: #f5f5f5; z-index: 3; }
@@ -765,7 +770,8 @@
                             <tr>
                                 <th class="col-issue">Tarea</th>
                                 <?php foreach ($mx['dates'] as $col): ?>
-                                    <th class="<?= $col['isWeekend'] ? 'col-weekend' : '' ?>"><?= htmlspecialchars($col['label']) ?></th>
+                                    <?php if ($col['isWeekend']) continue; ?>
+                                    <th><?= htmlspecialchars($col['label']) ?></th>
                                 <?php endforeach; ?>
                                 <th class="col-total">Total</th>
                             </tr>
@@ -778,10 +784,9 @@
                                     <span style="color:#aaa;margin-left:0.3rem;font-size:0.7rem;"><?= htmlspecialchars(mb_strimwidth($row['summary'], 0, 40, '...')) ?></span>
                                 </td>
                                 <?php foreach ($mx['dates'] as $col): ?>
+                                    <?php if ($col['isWeekend']) continue; ?>
                                     <?php $h = $row['cells'][$col['date']] ?? 0; ?>
-                                    <td class="<?= $col['isWeekend'] ? 'col-weekend' : '' ?>">
-                                        <?php if ($h > 0): ?><span class="cell-val"><?= $h ?>h</span><?php endif; ?>
-                                    </td>
+                                    <td><?php if ($h > 0): ?><span class="cell-val"><?= $h ?>h</span><?php endif; ?></td>
                                 <?php endforeach; ?>
                                 <td class="col-total"><?= $row['totalHours'] ?>h</td>
                             </tr>
@@ -791,10 +796,9 @@
                             <tr>
                                 <td class="col-issue">Total</td>
                                 <?php foreach ($mx['dates'] as $col): ?>
+                                    <?php if ($col['isWeekend']) continue; ?>
                                     <?php $t = $mx['totals'][$col['date']] ?? 0; ?>
-                                    <td class="<?= $col['isWeekend'] ? 'col-weekend' : '' ?>">
-                                        <?php if ($t > 0): ?><?= $t ?>h<?php endif; ?>
-                                    </td>
+                                    <td><?php if ($t > 0): ?><?= $t ?>h<?php endif; ?></td>
                                 <?php endforeach; ?>
                                 <td class="col-total"><?= $mx['grandTotal'] ?>h</td>
                             </tr>
