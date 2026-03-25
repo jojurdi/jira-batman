@@ -15,7 +15,7 @@
             font-size: 14px;
         }
 
-        .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+        .container { max-width: 1555px; margin: 0 auto; padding: 2rem 1.5rem; }
 
         header {
             display: flex;
@@ -159,6 +159,7 @@
         .tag-ok { background: #e6f4ea; color: #16793a; }
         .tag-partial { background: #fff3e0; color: #b35c00; }
         .tag-empty { background: #fde8e8; color: #c33; }
+        .tag-overtime { background: #fde8e8; color: #c33; }
         .tag-weekend { background: #f0f0f0; color: #999; }
 
         .day-hrs { font-size: 0.8rem; color: #888; font-family: 'SF Mono', 'Consolas', monospace; }
@@ -414,6 +415,94 @@
 
         .btn-del-wl:hover { color: #c33; }
 
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e5e5;
+            margin-bottom: 1.25rem;
+            gap: 0;
+        }
+
+        .tab-btn {
+            padding: 0.45rem 1.1rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.82rem;
+            color: #999;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn:hover { color: #555; }
+        .tab-btn.active { color: #333; font-weight: 600; border-bottom-color: #333; }
+
+        .matrix-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+
+        .matrix-table {
+            border-collapse: collapse;
+            font-size: 0.77rem;
+            white-space: nowrap;
+        }
+
+        .matrix-table th, .matrix-table td {
+            padding: 0.28rem 0.45rem;
+            border: 1px solid #eee;
+            text-align: center;
+        }
+
+        .matrix-table .col-issue {
+            text-align: left;
+            min-width: 180px;
+            max-width: 240px;
+            position: sticky;
+            left: 0;
+            background: #fff;
+            z-index: 2;
+            border-right: 2px solid #e5e5e5;
+        }
+
+        .matrix-table thead th {
+            background: #f5f5f5;
+            font-weight: 500;
+            color: #888;
+            font-size: 0.68rem;
+            line-height: 1.3;
+        }
+
+        .matrix-table thead .col-issue { background: #f5f5f5; z-index: 3; }
+
+        .matrix-table .col-weekend { background: #fafafa; color: #ccc; }
+        .matrix-table thead .col-weekend { color: #ccc; }
+
+        .matrix-table .cell-val {
+            color: #0052cc;
+            font-weight: 600;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+
+        .matrix-table .col-total {
+            background: #f9f9f9;
+            font-weight: 600;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            border-left: 2px solid #e5e5e5;
+        }
+
+        .matrix-table tfoot td {
+            background: #f0f0f0;
+            font-weight: 700;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            color: #333;
+            border-top: 2px solid #ddd;
+        }
+
+        .matrix-table tfoot .col-issue {
+            background: #f0f0f0;
+            color: #888;
+            font-size: 0.72rem;
+            font-weight: 500;
+            font-family: inherit;
+        }
+
         @media (max-width: 640px) {
             .container { padding: 1rem; }
             header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
@@ -497,11 +586,14 @@
                 </div>
             </div>
 
-            <?php if (!empty($report['byHierarchy'])): ?>
-            <div class="section-head" onclick="toggleSection('byHier')" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0.4rem;user-select:none;">
-                <span style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#999;">Concentrado por jerarqu&iacute;a</span>
-                <span id="byHier-arrow" style="font-size:0.7rem;color:#bbb;">&#9650;</span>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="dias"      onclick="switchTab('dias')">Captura de horas</button>
+                <button class="tab-btn"         data-tab="jerarquia" onclick="switchTab('jerarquia')">Concentrado</button>
+                <button class="tab-btn"         data-tab="matriz"   onclick="switchTab('matriz')">Matriz</button>
             </div>
+
+            <div id="tab-jerarquia" style="display:none;">
+            <?php if (!empty($report['byHierarchy'])): ?>
             <div id="byHier-body" style="margin-bottom:1.5rem;">
                 <?php foreach ($report['byHierarchy'] as $iIdx => $init): ?>
                 <div class="hier-init">
@@ -570,14 +662,22 @@
                 </div>
                 <?php endforeach; ?>
             </div>
+            <?php else: ?>
+                <div class="no-data">Sin datos de jerarqu&iacute;a en el periodo</div>
             <?php endif; ?>
+            </div><!-- /tab-jerarquia -->
 
+            <div id="tab-dias">
             <?php foreach ($report['days'] as $day): ?>
+                <?php if ($day['isWeekend'] && empty($day['worklogs'])) continue; ?>
                 <?php
                     if ($day['isWeekend']) {
                         $tagClass = 'tag-weekend';
                         $tagText = 'Descanso';
-                    } elseif ($day['totalHours'] >= $hoursPerDay) {
+                    } elseif ($day['totalHours'] > $hoursPerDay) {
+                        $tagClass = 'tag-overtime';
+                        $tagText = '+' . round($day['totalHours'] - $hoursPerDay, 2) . 'h';
+                    } elseif ($day['totalHours'] == $hoursPerDay) {
                         $tagClass = 'tag-ok';
                         $tagText = 'Completo';
                     } elseif ($day['totalHours'] > 0) {
@@ -654,6 +754,58 @@
                     </div>
                 </div>
             <?php endforeach; ?>
+            </div><!-- /tab-dias -->
+
+            <?php $mx = $report['matrix']; ?>
+            <div id="tab-matriz" style="display:none;">
+                <?php if (!empty($mx['rows'])): ?>
+                <div class="matrix-wrap">
+                    <table class="matrix-table">
+                        <thead>
+                            <tr>
+                                <th class="col-issue">Tarea</th>
+                                <?php foreach ($mx['dates'] as $col): ?>
+                                    <th class="<?= $col['isWeekend'] ? 'col-weekend' : '' ?>"><?= htmlspecialchars($col['label']) ?></th>
+                                <?php endforeach; ?>
+                                <th class="col-total">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($mx['rows'] as $row): ?>
+                            <tr>
+                                <td class="col-issue">
+                                    <a class="key-link" href="<?= htmlspecialchars($jiraBaseUrl) ?>/browse/<?= htmlspecialchars($row['issueKey']) ?>" target="_blank"><?= htmlspecialchars($row['issueKey']) ?></a>
+                                    <span style="color:#aaa;margin-left:0.3rem;font-size:0.7rem;"><?= htmlspecialchars(mb_strimwidth($row['summary'], 0, 40, '...')) ?></span>
+                                </td>
+                                <?php foreach ($mx['dates'] as $col): ?>
+                                    <?php $h = $row['cells'][$col['date']] ?? 0; ?>
+                                    <td class="<?= $col['isWeekend'] ? 'col-weekend' : '' ?>">
+                                        <?php if ($h > 0): ?><span class="cell-val"><?= $h ?>h</span><?php endif; ?>
+                                    </td>
+                                <?php endforeach; ?>
+                                <td class="col-total"><?= $row['totalHours'] ?>h</td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td class="col-issue">Total</td>
+                                <?php foreach ($mx['dates'] as $col): ?>
+                                    <?php $t = $mx['totals'][$col['date']] ?? 0; ?>
+                                    <td class="<?= $col['isWeekend'] ? 'col-weekend' : '' ?>">
+                                        <?php if ($t > 0): ?><?= $t ?>h<?php endif; ?>
+                                    </td>
+                                <?php endforeach; ?>
+                                <td class="col-total"><?= $mx['grandTotal'] ?>h</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <?php else: ?>
+                    <div class="no-data">Sin datos en el periodo</div>
+                <?php endif; ?>
+            </div><!-- /tab-matriz -->
+
         <?php endif; ?>
     <?php endif; ?>
 </div>
@@ -797,6 +949,16 @@ var JIRA_BASE_URL = '<?= htmlspecialchars($jiraBaseUrl) ?>';
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeCfg();
     });
+
+    window.switchTab = function(name) {
+        document.querySelectorAll('.tab-btn').forEach(function(b) {
+            b.classList.toggle('active', b.dataset.tab === name);
+        });
+        ['dias', 'jerarquia', 'matriz'].forEach(function(t) {
+            var el = document.getElementById('tab-' + t);
+            if (el) el.style.display = t === name ? '' : 'none';
+        });
+    };
 
     window.toggleHier = function(id) {
         var el = document.getElementById('hier-' + id);
@@ -1050,6 +1212,12 @@ var JIRA_BASE_URL = '<?= htmlspecialchars($jiraBaseUrl) ?>';
         e.stopPropagation();
         if (!confirm('¿Eliminar el registro de ' + timeSpent + ' en ' + issueKey + '?')) return;
 
+        var btn = e.target;
+        var originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '…';
+        btn.style.color = '#aaa';
+
         var row = document.querySelector('tr[data-wl-id="' + worklogId + '"]');
 
         fetch(location.pathname + location.search, {
@@ -1088,7 +1256,10 @@ var JIRA_BASE_URL = '<?= htmlspecialchars($jiraBaseUrl) ?>';
                 dayHrsEl.querySelector('strong').textContent = totalHours;
 
                 var tag = dayHead.querySelector('.tag');
-                if (totalHours >= expectedHours) {
+                if (totalHours > expectedHours) {
+                    var over = Math.round((totalHours - expectedHours) * 100) / 100;
+                    tag.className = 'tag tag-overtime'; tag.textContent = '+' + over + 'h';
+                } else if (totalHours === expectedHours) {
                     tag.className = 'tag tag-ok'; tag.textContent = 'Completo';
                 } else if (totalHours > 0) {
                     var rem = Math.round((expectedHours - totalHours) * 100) / 100;
@@ -1097,10 +1268,18 @@ var JIRA_BASE_URL = '<?= htmlspecialchars($jiraBaseUrl) ?>';
                     tag.className = 'tag tag-empty'; tag.textContent = 'Sin registro';
                 }
             } else {
+                btn.disabled = false;
+                btn.textContent = originalText;
+                btn.style.color = '';
                 alert('Error al eliminar: ' + (data.error || 'Error desconocido'));
             }
         })
-        .catch(function() { alert('Error de conexión'); });
+        .catch(function() {
+            btn.disabled = false;
+            btn.textContent = originalText;
+            btn.style.color = '';
+            alert('Error de conexión');
+        });
     };
 
     function showWlError(msg) {

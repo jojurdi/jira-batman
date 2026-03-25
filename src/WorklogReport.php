@@ -47,7 +47,8 @@ class WorklogReport
         $end->setTime(23, 59, 59);
 
         $dayMap = [];
-        $period = new \DatePeriod($start, new \DateInterval('P1D'), (clone $end)->modify('+1 day'));
+        $periodEnd = (new \DateTime($endDate, $tz))->modify('+1 day');
+        $period = new \DatePeriod($start, new \DateInterval('P1D'), $periodEnd);
         foreach ($period as $day) {
             $key = $day->format('Y-m-d');
             $dayOfWeek = (int) $day->format('N');
@@ -64,11 +65,10 @@ class WorklogReport
         $issueEpicKeys = [];
         $epicKeysNeeded = [];
         foreach ($issues as $issue) {
-            $k = $issue['key'];
-            $parentKey  = $issue['fields']['parent']['key'] ?? null;
-            $parentType = strtolower($issue['fields']['parent']['fields']['issuetype']['name'] ?? '');
-            $epicLink   = $issue['fields']['customfield_10014'] ?? null;
-            if ($parentType === 'epic' && $parentKey) {
+            $k         = $issue['key'];
+            $parentKey = $issue['fields']['parent']['key'] ?? null;
+            $epicLink  = $issue['fields']['customfield_10014'] ?? null;
+            if ($parentKey) {
                 $issueEpicKeys[$k] = $parentKey;
                 $epicKeysNeeded[$parentKey] = true;
             } elseif ($epicLink) {
@@ -232,9 +232,54 @@ class WorklogReport
         }
         usort($byHierarchy, fn($a, $b) => $b['totalSeconds'] - $a['totalSeconds']);
 
+        // Construir matriz: tarea × día
+        $matrixDates = [];
+        foreach ($dayMap as $date => $day) {
+            $matrixDates[] = [
+                'date'      => $date,
+                'isWeekend' => $day['isWeekend'],
+                'label'     => mb_substr($day['dayName'], 0, 2) . ' ' . date('d', strtotime($date)),
+            ];
+        }
+
+        $matrixRows   = [];
+        $matrixTotals = array_fill_keys(array_keys($dayMap), 0.0);
+
+        foreach ($dayMap as $date => $day) {
+            foreach ($day['worklogs'] as $wl) {
+                $k = $wl['issueKey'];
+                if (!isset($matrixRows[$k])) {
+                    $matrixRows[$k] = [
+                        'issueKey'     => $k,
+                        'summary'      => $wl['summary'],
+                        'project'      => $wl['project'],
+                        'totalSeconds' => 0,
+                        'cells'        => array_fill_keys(array_keys($dayMap), 0.0),
+                    ];
+                }
+                $h = round($wl['timeSpentSeconds'] / 3600, 2);
+                $matrixRows[$k]['cells'][$date]  = round(($matrixRows[$k]['cells'][$date] ?? 0) + $h, 2);
+                $matrixRows[$k]['totalSeconds'] += $wl['timeSpentSeconds'];
+                $matrixTotals[$date]             = round(($matrixTotals[$date] ?? 0) + $h, 2);
+            }
+        }
+
+        usort($matrixRows, fn($a, $b) => $b['totalSeconds'] - $a['totalSeconds']);
+        $matrixFinal = [];
+        foreach ($matrixRows as $row) {
+            $row['totalHours'] = round($row['totalSeconds'] / 3600, 2);
+            $matrixFinal[]     = $row;
+        }
+
         return [
             'days'        => array_values($dayMap),
             'byHierarchy' => $byHierarchy,
+            'matrix'      => [
+                'dates'      => $matrixDates,
+                'rows'       => $matrixFinal,
+                'totals'     => $matrixTotals,
+                'grandTotal' => round(array_sum($matrixTotals), 2),
+            ],
             'summary' => [
                 'startDate' => $startDate,
                 'endDate' => $endDate,
