@@ -271,9 +271,42 @@ class WorklogReport
             $matrixFinal[]     = $row;
         }
 
+        // Amortizable: tareas cuya épica tiene iniciativa padre.
+        // No amortizable: el resto (sin épica, o épica sin iniciativa).
+        $amortizableSeconds = 0;
+        $nonAmortizableSeconds = 0;
+        $amortizableInitiatives = [];
+        foreach ($byHierarchy as $init) {
+            if (!empty($init['key'])) {
+                $amortizableSeconds += $init['totalSeconds'];
+                $amortizableInitiatives[] = [
+                    'key'          => $init['key'],
+                    'summary'      => $init['summary'],
+                    'totalSeconds' => $init['totalSeconds'],
+                    'totalHours'   => $init['totalHours'],
+                ];
+            } else {
+                $nonAmortizableSeconds += $init['totalSeconds'];
+            }
+        }
+        $amortTotalSeconds = $amortizableSeconds + $nonAmortizableSeconds;
+        $amortization = [
+            'amortizableHours'    => round($amortizableSeconds / 3600, 2),
+            'nonAmortizableHours' => round($nonAmortizableSeconds / 3600, 2),
+            'totalHours'          => round($amortTotalSeconds / 3600, 2),
+            'amortizablePercent'  => $amortTotalSeconds > 0
+                ? round($amortizableSeconds / $amortTotalSeconds * 100, 1)
+                : 0,
+            'nonAmortizablePercent' => $amortTotalSeconds > 0
+                ? round($nonAmortizableSeconds / $amortTotalSeconds * 100, 1)
+                : 0,
+            'initiatives' => $amortizableInitiatives,
+        ];
+
         return [
-            'days'        => array_values($dayMap),
-            'byHierarchy' => $byHierarchy,
+            'days'         => array_values($dayMap),
+            'byHierarchy'  => $byHierarchy,
+            'amortization' => $amortization,
             'matrix'      => [
                 'dates'      => $matrixDates,
                 'rows'       => $matrixFinal,

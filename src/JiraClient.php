@@ -105,7 +105,7 @@ class JiraClient
         if ($httpCode >= 400) {
             $body = json_decode($response, true);
             $msg = $body['errorMessages'][0] ?? $body['message'] ?? "HTTP {$httpCode}";
-            throw new \RuntimeException("Error de Jira API ({$httpCode}): {$msg}");
+            throw new \RuntimeException("Error de Jira API ({$httpCode}): {$msg}", $httpCode);
         }
 
         return json_decode($response, true) ?? [];
@@ -165,7 +165,7 @@ class JiraClient
         if ($httpCode >= 400) {
             $body = json_decode($response, true);
             $msg = $body['errorMessages'][0] ?? $body['message'] ?? "HTTP {$httpCode}";
-            throw new \RuntimeException("Error de Jira API ({$httpCode}): {$msg}");
+            throw new \RuntimeException("Error de Jira API ({$httpCode}): {$msg}", $httpCode);
         }
 
         return json_decode($response, true) ?? [];
@@ -207,7 +207,7 @@ class JiraClient
         if ($httpCode >= 400) {
             $body = json_decode($response, true);
             $msg = $body['errorMessages'][0] ?? $body['message'] ?? "HTTP {$httpCode}";
-            throw new \RuntimeException("Error de Jira API ({$httpCode}): {$msg}");
+            throw new \RuntimeException("Error de Jira API ({$httpCode}): {$msg}", $httpCode);
         }
 
         return json_decode($response, true) ?? [];

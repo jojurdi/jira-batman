@@ -28,7 +28,8 @@
       "Bash(chmod 600 .deploy_password)",
       "Bash(./deploy.sh --dry-run)",
       "Bash(./deploy.sh --skip-backup)",
-      "Bash(./deploy.sh)"
+      "Bash(./deploy.sh)",
+      "Bash(curl -sS https://jojurdi.com/jira-batman/)"
     ]
   }
 }

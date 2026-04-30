@@ -86,6 +86,8 @@ switch ($rangeType) {
 }
 
 $error = null;
+$authError = false;
+$authErrorMethod = null;
 $report = null;
 $displayName = '';
 
@@ -95,7 +97,19 @@ if (!$needsSetup) {
         $displayName = $worklogReport->getAccountDisplayName();
         $report = $worklogReport->generate($startDate, $endDate);
     } catch (\Throwable $e) {
-        $error = $e->getMessage();
+        if (in_array($e->getCode(), [401, 403], true)) {
+            $authError = true;
+            $authErrorMethod = $authMethod;
+            // Si fue OAuth, el token está revocado o expiró sin refresh válido: limpiar.
+            if ($authMethod === 'oauth') {
+                AuthSession::clearOAuth();
+                $authMethod = null;
+                $oauthSession = null;
+            }
+            $needsSetup = true;
+        } else {
+            $error = $e->getMessage();
+        }
     }
 }
 
