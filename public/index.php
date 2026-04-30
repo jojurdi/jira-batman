@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\AuthSession;
+use App\JiraApiException;
 use App\JiraClient;
 use App\OAuthClient;
 use App\WorklogReport;
@@ -40,11 +41,17 @@ if ($oauthAvailable && AuthSession::getOAuth()) {
     }
 }
 
-// Fallback: cookies/env con email + API token
+// Fallback: cookies del navegador (por usuario). El uso de credenciales del .env
+// como fallback compartido está deshabilitado por defecto para evitar que cualquier
+// visitante use la cuenta del servidor. Activar con ALLOW_ENV_FALLBACK=true solo
+// en entornos de un solo usuario (desarrollo local).
 $cookieEmail = isset($_COOKIE['jira_email']) && $_COOKIE['jira_email'] !== '' ? $_COOKIE['jira_email'] : null;
 $cookieToken = isset($_COOKIE['jira_token']) && $_COOKIE['jira_token'] !== '' ? $_COOKIE['jira_token'] : null;
-$jiraEmail = $cookieEmail ?? ($_ENV['JIRA_EMAIL'] ?? '');
-$jiraToken = $cookieToken ?? ($_ENV['JIRA_API_TOKEN'] ?? '');
+$allowEnvFallback = filter_var($_ENV['ALLOW_ENV_FALLBACK'] ?? 'false', FILTER_VALIDATE_BOOLEAN);
+$envEmail = $allowEnvFallback ? ($_ENV['JIRA_EMAIL'] ?? '') : '';
+$envToken = $allowEnvFallback ? ($_ENV['JIRA_API_TOKEN'] ?? '') : '';
+$jiraEmail = $cookieEmail ?? $envEmail;
+$jiraToken = $cookieToken ?? $envToken;
 $hasToken = !empty($jiraToken);
 
 if (!$client && !empty($jiraEmail) && !empty($jiraToken)) {
@@ -190,21 +197,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'apply_transition') {
             $issueKey = strtoupper(trim($body['issueKey'] ?? ''));
             $transitionId = trim($body['transitionId'] ?? '');
+            $extraFields  = is_array($body['extraFields'] ?? null) ? $body['extraFields'] : [];
+            $comment      = trim((string) ($body['comment'] ?? ''));
             if (!$issueKey || !$transitionId) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Faltan issueKey o transitionId']);
                 exit;
             }
             try {
-                $client->applyTransitionById($issueKey, $transitionId);
+                $client->applyTransitionById($issueKey, $transitionId, $extraFields, $comment ?: null);
                 $issue = $client->getIssue($issueKey);
                 AuthSession::clearReportCache();
                 echo json_encode([
                     'ok'     => true,
                     'status' => $issue['fields']['status']['name'] ?? '',
                 ]);
+            } catch (JiraApiException $e) {
+                http_response_code($e->getCode() ?: 500);
+                echo json_encode([
+                    'error'        => $e->getMessage(),
+                    'fieldErrors'  => $e->fieldErrors,
+                    'issueKey'     => $issueKey,
+                    'transitionId' => $transitionId,
+                ]);
             } catch (\Throwable $e) {
-                http_response_code(500);
+                $code = (int) $e->getCode();
+                http_response_code(($code >= 400 && $code < 600) ? $code : 500);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+            exit;
+        }
+        if ($action === 'issue_fields_metadata') {
+            $issueKey = strtoupper(trim($body['issueKey'] ?? ''));
+            $keys     = is_array($body['fieldKeys'] ?? null) ? $body['fieldKeys'] : [];
+            if (!$issueKey || empty($keys)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Faltan issueKey o fieldKeys']);
+                exit;
+            }
+            try {
+                $fields = $client->getIssueFieldsMetadata($issueKey, $keys);
+                echo json_encode(['ok' => true, 'fields' => $fields]);
+            } catch (\Throwable $e) {
+                $code = (int) $e->getCode();
+                http_response_code(($code >= 400 && $code < 600) ? $code : 500);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+            exit;
+        }
+        if ($action === 'transition_required_fields') {
+            $issueKey = strtoupper(trim($body['issueKey'] ?? ''));
+            $transitionId = trim($body['transitionId'] ?? '');
+            if (!$issueKey || !$transitionId) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Faltan issueKey o transitionId']);
+                exit;
+            }
+            try {
+                $info = $client->getTransitionRequiredFields($issueKey, $transitionId);
+                echo json_encode([
+                    'ok'              => true,
+                    'commentRequired' => $info['commentRequired'],
+                    'fields'          => $info['fields'],
+                ]);
+            } catch (\Throwable $e) {
+                $code = (int) $e->getCode();
+                http_response_code(($code >= 400 && $code < 600) ? $code : 500);
                 echo json_encode(['error' => $e->getMessage()]);
             }
             exit;
@@ -335,10 +393,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             exit;
         }
+        if ($action === 'subtask_types') {
+            $parentKey = strtoupper(trim($body['parentKey'] ?? ''));
+            if (!$parentKey) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Falta parentKey']);
+                exit;
+            }
+            try {
+                $parent = $client->getIssue($parentKey);
+                $projectId = $parent['fields']['project']['id'] ?? '';
+                $types = $client->listSubtaskIssueTypes($projectId);
+                echo json_encode(['ok' => true, 'types' => $types]);
+            } catch (\Throwable $e) {
+                http_response_code(500);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+            exit;
+        }
+        if ($action === 'subtask_probe') {
+            $parentKey = strtoupper(trim($body['parentKey'] ?? ''));
+            $issuetypeName = trim($body['issuetypeName'] ?? '');
+            if (!$parentKey || !$issuetypeName) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Faltan parentKey o issuetypeName']);
+                exit;
+            }
+            try {
+                $info = $client->probeCreateSubtask($parentKey, $issuetypeName);
+                echo json_encode([
+                    'ok'            => true,
+                    'fieldErrors'   => $info['fieldErrors'],
+                    'errorMessages' => $info['errorMessages'] ?? [],
+                ]);
+            } catch (\Throwable $e) {
+                $code = (int) $e->getCode();
+                http_response_code(($code >= 400 && $code < 600) ? $code : 500);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+            exit;
+        }
+        if ($action === 'subtask_required_fields') {
+            $parentKey = strtoupper(trim($body['parentKey'] ?? ''));
+            $issuetypeId = trim($body['issuetypeId'] ?? '');
+            $issuetypeName = trim($body['issuetypeName'] ?? '');
+            $includeOptional = !empty($body['includeOptional']);
+            if (!$parentKey || (!$issuetypeId && !$issuetypeName)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Faltan parentKey o issuetypeId/Name']);
+                exit;
+            }
+            try {
+                $parent = $client->getIssue($parentKey);
+                $projectId = $parent['fields']['project']['id'] ?? '';
+                if (!$issuetypeId && $issuetypeName) {
+                    foreach ($client->listSubtaskIssueTypes($projectId) as $t) {
+                        if (mb_strtolower($t['name']) === mb_strtolower($issuetypeName)) {
+                            $issuetypeId = $t['id'];
+                            break;
+                        }
+                    }
+                }
+                $fields = $issuetypeId
+                    ? $client->getCreateMetaRequiredFields($projectId, $issuetypeId, $includeOptional)
+                    : [];
+                echo json_encode(['ok' => true, 'fields' => $fields]);
+            } catch (\Throwable $e) {
+                http_response_code(500);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+            exit;
+        }
         if ($action === 'create_subtask') {
             $parentKey   = strtoupper(trim($body['parentKey'] ?? ''));
             $summary     = trim($body['summary'] ?? '');
             $description = trim($body['description'] ?? '');
+            $issuetypeName = trim($body['issuetypeName'] ?? '');
+            $extraFields   = is_array($body['extraFields'] ?? null) ? $body['extraFields'] : [];
+            $worklogDuration = trim($body['worklogDuration'] ?? '');
+            $worklogComment  = trim($body['worklogComment'] ?? '');
+            $worklogDate     = trim($body['worklogDate'] ?? '');
+            $worklogTime     = trim($body['worklogTime'] ?? '09:00');
             if (!$parentKey || !$summary) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Faltan parentKey o summary']);
@@ -346,8 +481,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $cachedMe = AuthSession::cachedMyself($client);
             $accountId = $cachedMe['accountId'] ?? null;
-            $result = $client->createSubtaskAndTransition($parentKey, $summary, $description ?: null, $accountId);
+            $result = $client->createSubtaskAndTransition(
+                $parentKey,
+                $summary,
+                $description ?: null,
+                $accountId,
+                '/progres|curso|doing|trabaj|en uso/iu',
+                $issuetypeName ?: null,
+                $extraFields
+            );
             $newKey = $result['key'] ?? '';
+
+            // Worklog opcional en la subtarea recién creada
+            $worklogResult = null;
+            if ($newKey && $worklogDuration !== '') {
+                $seconds = 0;
+                if (preg_match('/(\d+(?:\.\d+)?)\s*h/i', $worklogDuration, $m)) {
+                    $seconds += (int) round((float) $m[1] * 3600);
+                }
+                if (preg_match('/(\d+)\s*m/i', $worklogDuration, $m)) {
+                    $seconds += (int) $m[1] * 60;
+                }
+                if ($seconds > 0) {
+                    try {
+                        if ($worklogDate !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $worklogDate)) {
+                            $timeStr = preg_match('/^\d{2}:\d{2}$/', $worklogTime) ? $worklogTime : '09:00';
+                            $dt = new DateTime($worklogDate . ' ' . $timeStr, new DateTimeZone($timezone));
+                        } else {
+                            $dt = new DateTime('now', new DateTimeZone($timezone));
+                        }
+                        $started = $dt->format('Y-m-d\TH:i:s.000O');
+                        $client->addWorklog($newKey, $started, $seconds, $worklogComment ?: null);
+                        $worklogResult = ['ok' => true, 'duration' => $worklogDuration];
+                        AuthSession::clearReportCache();
+                    } catch (\Throwable $e) {
+                        $worklogResult = ['ok' => false, 'error' => $e->getMessage()];
+                    }
+                } else {
+                    $worklogResult = ['ok' => false, 'error' => 'Duración inválida (usa formato 1h, 30m, 2h 30m)'];
+                }
+            }
 
             // Obtener info completa del issue para que el frontend lo agregue a la lista
             $issueData = null;
@@ -373,6 +546,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'issue'            => $issueData,
                 'transitionName'   => $result['transition']['name'] ?? null,
                 'transitionFailed' => isset($result['transition']['error']),
+                'worklog'          => $worklogResult,
             ]);
             exit;
         }
@@ -506,7 +680,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(400);
         echo json_encode(['error' => 'Acción desconocida']);
     } catch (\Throwable $e) {
-        http_response_code(500);
+        $code = (int) $e->getCode();
+        http_response_code(($code >= 400 && $code < 600) ? $code : 500);
         echo json_encode(['error' => $e->getMessage()]);
     }
     exit;

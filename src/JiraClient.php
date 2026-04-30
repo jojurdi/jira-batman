@@ -103,9 +103,7 @@ class JiraClient
         }
 
         if ($httpCode >= 400) {
-            $body = json_decode($response, true);
-            $msg = $body['errorMessages'][0] ?? $body['message'] ?? "HTTP {$httpCode}";
-            throw new \RuntimeException("Error de Jira API ({$httpCode}): {$msg}", $httpCode);
+            self::throwJiraError($httpCode, $response);
         }
 
         return json_decode($response, true) ?? [];
@@ -114,6 +112,38 @@ class JiraClient
     public function getMyself(): array
     {
         return $this->get('/rest/api/3/myself');
+    }
+
+    /**
+     * Convierte la respuesta cruda de un error de Jira en un mensaje legible.
+     * Lanza JiraApiException preservando errorMessages[] y errors{} para que
+     * el endpoint pueda reaccionar (ej. abrir un modal con los campos faltantes).
+     */
+    private static function throwJiraError(int $httpCode, ?string $response): void
+    {
+        $body = is_string($response) ? json_decode($response, true) : null;
+        $errorMessages = [];
+        $fieldErrors = [];
+        $parts = [];
+        if (is_array($body)) {
+            foreach (($body['errorMessages'] ?? []) as $m) {
+                if ($m !== '') {
+                    $errorMessages[] = (string) $m;
+                    $parts[] = (string) $m;
+                }
+            }
+            foreach (($body['errors'] ?? []) as $field => $m) {
+                if ($m !== '') {
+                    $fieldErrors[(string) $field] = (string) $m;
+                    $parts[] = $field . ': ' . (string) $m;
+                }
+            }
+            if (empty($parts) && !empty($body['message'])) {
+                $parts[] = (string) $body['message'];
+            }
+        }
+        $msg = $parts ? implode(' | ', $parts) : "HTTP {$httpCode}";
+        throw new JiraApiException("Error de Jira API ({$httpCode}): {$msg}", $httpCode, $errorMessages, $fieldErrors);
     }
 
     public function searchIssues(string $jql, int $maxResults = 100, string $fields = 'summary,worklog,status,project'): array
@@ -337,9 +367,7 @@ class JiraClient
         }
 
         if ($httpCode >= 400) {
-            $body = json_decode($response, true);
-            $msg = $body['errorMessages'][0] ?? $body['message'] ?? "HTTP {$httpCode}";
-            throw new \RuntimeException("Error de Jira API ({$httpCode}): {$msg}", $httpCode);
+            self::throwJiraError($httpCode, $response);
         }
 
         return json_decode($response, true) ?? [];
@@ -438,9 +466,7 @@ class JiraClient
         }
 
         if ($httpCode >= 400) {
-            $body = json_decode($response, true);
-            $msg = $body['errorMessages'][0] ?? $body['message'] ?? "HTTP {$httpCode}";
-            throw new \RuntimeException("Error de Jira API ({$httpCode}): {$msg}", $httpCode);
+            self::throwJiraError($httpCode, $response);
         }
 
         return json_decode($response, true) ?? [];
@@ -464,11 +490,98 @@ class JiraClient
         return $data['transitions'] ?? [];
     }
 
-    public function applyTransitionById(string $issueKey, string $transitionId): void
+    public function applyTransitionById(
+        string $issueKey,
+        string $transitionId,
+        array $extraFields = [],
+        ?string $comment = null
+    ): void {
+        $payload = ['transition' => ['id' => $transitionId]];
+        if (!empty($extraFields)) {
+            $payload['fields'] = $extraFields;
+        }
+        if ($comment !== null && $comment !== '') {
+            $payload['update'] = $payload['update'] ?? [];
+            $payload['update']['comment'] = [[
+                'add' => [
+                    'body' => [
+                        'type'    => 'doc',
+                        'version' => 1,
+                        'content' => [[
+                            'type'    => 'paragraph',
+                            'content' => [['type' => 'text', 'text' => $comment]],
+                        ]],
+                    ],
+                ],
+            ]];
+        }
+        $this->post("/rest/api/3/issue/{$issueKey}/transitions", $payload);
+    }
+
+    /**
+     * Devuelve los campos requeridos por la transición indicada para el issue.
+     * Usa el expand 'transitions.fields' del endpoint de transitions.
+     *
+     * @return array{
+     *   commentRequired: bool,
+     *   fields: array<int, array{
+     *     key: string, name: string, type: string, items: ?string,
+     *     allowedValues: array, multiple: bool, hasDefaultValue: bool
+     *   }>
+     * }
+     */
+    public function getTransitionRequiredFields(string $issueKey, string $transitionId): array
     {
-        $this->post("/rest/api/3/issue/{$issueKey}/transitions", [
-            'transition' => ['id' => $transitionId],
+        $skip = ['summary', 'project', 'issuetype', 'parent', 'description',
+                 'reporter', 'attachment', 'issuelinks'];
+        $data = $this->get("/rest/api/3/issue/{$issueKey}/transitions", [
+            'expand' => 'transitions.fields',
         ]);
+        $transitions = $data['transitions'] ?? [];
+        $target = null;
+        foreach ($transitions as $t) {
+            if ((string) ($t['id'] ?? '') === $transitionId) {
+                $target = $t;
+                break;
+            }
+        }
+        if (!$target) {
+            return ['commentRequired' => false, 'fields' => []];
+        }
+        $fieldsMap = $target['fields'] ?? [];
+
+        $commentRequired = false;
+        $out = [];
+        foreach ($fieldsMap as $key => $f) {
+            if (empty($f['required'])) continue;
+            if ($key === 'comment') {
+                $commentRequired = true;
+                continue;
+            }
+            if (in_array($key, $skip, true)) continue;
+            if (!empty($f['hasDefaultValue'])) continue;
+
+            $schema = $f['schema'] ?? [];
+            $type = (string) ($schema['type'] ?? 'string');
+            $items = isset($schema['items']) ? (string) $schema['items'] : null;
+            $allowed = [];
+            foreach (($f['allowedValues'] ?? []) as $av) {
+                $allowed[] = [
+                    'id'    => (string) ($av['id'] ?? ''),
+                    'value' => (string) ($av['value'] ?? $av['name'] ?? ''),
+                ];
+            }
+            $out[] = [
+                'key'             => (string) $key,
+                'name'            => (string) ($f['name'] ?? $key),
+                'type'            => $type,
+                'items'           => $items,
+                'allowedValues'   => $allowed,
+                'multiple'        => $type === 'array',
+                'hasDefaultValue' => !empty($f['hasDefaultValue']),
+            ];
+        }
+        return ['commentRequired' => $commentRequired, 'fields' => $out];
     }
 
     /**
@@ -492,7 +605,9 @@ class JiraClient
         string $summary,
         ?string $description = null,
         ?string $assigneeAccountId = null,
-        string $transitionMatch = '/progres|curso|doing|trabaj|en uso/iu'
+        string $transitionMatch = '/progres|curso|doing|trabaj|en uso/iu',
+        ?string $issuetypeName = null,
+        array $extraFields = []
     ): array {
         $parent = $this->getIssue($parentKey);
         $projectKey = $parent['fields']['project']['key'] ?? '';
@@ -501,10 +616,25 @@ class JiraClient
             throw new \RuntimeException("No se pudo determinar el proyecto del parent {$parentKey}");
         }
 
-        // Detectar el issuetype subtarea del proyecto.
-        $subtaskTypeName = $this->findSubtaskIssueType($projectId);
-        if (!$subtaskTypeName) {
+        $subtaskTypes = $this->listSubtaskIssueTypes($projectId);
+        if (empty($subtaskTypes)) {
             throw new \RuntimeException("El proyecto {$projectKey} no tiene un tipo de subtarea configurado.");
+        }
+
+        $subtaskTypeName = null;
+        if ($issuetypeName !== null && $issuetypeName !== '') {
+            // Validar que el nombre solicitado sea un subtask type del proyecto.
+            foreach ($subtaskTypes as $t) {
+                if (mb_strtolower($t['name']) === mb_strtolower($issuetypeName)) {
+                    $subtaskTypeName = $t['name'];
+                    break;
+                }
+            }
+            if (!$subtaskTypeName) {
+                throw new \RuntimeException("El tipo '{$issuetypeName}' no es un tipo de subtarea válido en el proyecto {$projectKey}.");
+            }
+        } else {
+            $subtaskTypeName = $this->preferredSubtaskName($subtaskTypes);
         }
 
         $fields = [
@@ -527,6 +657,9 @@ class JiraClient
                 ]],
             ];
         }
+        foreach ($extraFields as $k => $v) {
+            $fields[$k] = $v;
+        }
 
         $created = $this->post('/rest/api/3/issue', ['fields' => $fields]);
         $newKey = $created['key'] ?? '';
@@ -548,25 +681,302 @@ class JiraClient
         ];
     }
 
-    private function findSubtaskIssueType(string $projectIdOrKey): ?string
+    /**
+     * Devuelve los issue types con subtask=true del proyecto, cada uno como
+     * ['name' => ..., 'iconUrl' => ..., 'recommended' => bool]. El "recomendado"
+     * es el que parece ser una subtarea genérica por nombre (Subtarea, Subtask,
+     * Sub-task, Tarea secundaria...). Si ninguno matchea, marca el primero.
+     *
+     * @return array<int, array{name: string, iconUrl: string, recommended: bool}>
+     */
+    public function listSubtaskIssueTypes(string $projectIdOrKey): array
     {
-        if (!$projectIdOrKey) return null;
+        if (!$projectIdOrKey) return [];
         try {
             $types = $this->get('/rest/api/3/issuetype/project', ['projectId' => $projectIdOrKey]);
         } catch (\Throwable $e) {
-            // Fallback: tipos globales
             try {
                 $types = $this->get('/rest/api/3/issuetype');
             } catch (\Throwable $e2) {
-                return null;
+                return [];
             }
         }
+
+        $out = [];
         foreach ($types as $t) {
-            if (!empty($t['subtask']) && !empty($t['name'])) {
+            if (empty($t['subtask']) || empty($t['name'])) continue;
+            $out[] = [
+                'id'      => (string) ($t['id'] ?? ''),
+                'name'    => (string) $t['name'],
+                'iconUrl' => (string) ($t['iconUrl'] ?? ''),
+            ];
+        }
+
+        $recommendedName = $this->preferredSubtaskName($out);
+        foreach ($out as &$row) {
+            $row['recommended'] = ($row['name'] === $recommendedName);
+        }
+        unset($row);
+
+        // Recomendado primero, resto por nombre.
+        usort($out, function ($a, $b) {
+            if ($a['recommended'] !== $b['recommended']) {
+                return $a['recommended'] ? -1 : 1;
+            }
+            return strcasecmp($a['name'], $b['name']);
+        });
+
+        return $out;
+    }
+
+    /**
+     * Devuelve los campos requeridos para crear un issue del tipo dado en el proyecto.
+     * Excluye los que la app maneja por su cuenta (summary, project, issuetype, parent,
+     * description, reporter, attachment, issuelinks).
+     *
+     * @return array<int, array{
+     *   key: string, name: string, type: string, items: ?string,
+     *   allowedValues: array, multiple: bool, hasDefaultValue: bool
+     * }>
+     */
+    public function getCreateMetaRequiredFields(
+        string $projectIdOrKey,
+        string $issuetypeId,
+        bool $includeOptional = false
+    ): array {
+        if (!$projectIdOrKey || !$issuetypeId) return [];
+        $skip = ['summary', 'project', 'issuetype', 'parent', 'description',
+                 'reporter', 'attachment', 'issuelinks'];
+
+        try {
+            $resp = $this->get(
+                "/rest/api/3/issue/createmeta/{$projectIdOrKey}/issuetypes/{$issuetypeId}",
+                ['maxResults' => 100]
+            );
+            $rawFields = $resp['fields'] ?? $resp['values'] ?? [];
+        } catch (\Throwable $e) {
+            // Fallback al endpoint antiguo
+            try {
+                $resp = $this->get('/rest/api/3/issue/createmeta', [
+                    'projectIds'    => $projectIdOrKey,
+                    'issuetypeIds'  => $issuetypeId,
+                    'expand'        => 'projects.issuetypes.fields',
+                ]);
+                $rawFields = $resp['projects'][0]['issuetypes'][0]['fields'] ?? [];
+                $tmp = [];
+                foreach ($rawFields as $key => $f) {
+                    $f['fieldId'] = $f['fieldId'] ?? $key;
+                    $tmp[] = $f;
+                }
+                $rawFields = $tmp;
+            } catch (\Throwable $e2) {
+                return [];
+            }
+        }
+
+        $out = [];
+        foreach ($rawFields as $f) {
+            $key = $f['fieldId'] ?? $f['key'] ?? '';
+            if (!$key || in_array($key, $skip, true)) continue;
+            $isRequired = !empty($f['required']);
+            $isCustom   = strpos($key, 'customfield_') === 0;
+            // Siempre incluir required (sin default). Opcionalmente, también customfields no-required.
+            if (!$isRequired && !($includeOptional && $isCustom)) continue;
+            if ($isRequired && !empty($f['hasDefaultValue'])) continue;
+
+            $schema = $f['schema'] ?? [];
+            $type = (string) ($schema['type'] ?? 'string');
+            $items = isset($schema['items']) ? (string) $schema['items'] : null;
+            $allowed = [];
+            foreach (($f['allowedValues'] ?? []) as $av) {
+                $allowed[] = [
+                    'id'    => (string) ($av['id'] ?? ''),
+                    'value' => (string) ($av['value'] ?? $av['name'] ?? ''),
+                ];
+            }
+            $out[] = [
+                'key'             => $key,
+                'name'            => (string) ($f['name'] ?? $key),
+                'type'            => $type,
+                'items'           => $items,
+                'allowedValues'   => $allowed,
+                'multiple'        => $type === 'array',
+                'required'        => $isRequired,
+                'hasDefaultValue' => !empty($f['hasDefaultValue']),
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Devuelve metadata (name, type, allowedValues) de los campos indicados para un issue.
+     * Usa /editmeta del issue, que es la fuente de verdad para campos editables.
+     *
+     * @param string[] $fieldKeys lista de field keys (customfield_xxx, etc.)
+     * @return array<int, array{
+     *   key: string, name: string, type: string, items: ?string,
+     *   allowedValues: array, multiple: bool, required: bool
+     * }>
+     */
+    public function getIssueFieldsMetadata(string $issueKey, array $fieldKeys): array
+    {
+        if (!$issueKey || empty($fieldKeys)) return [];
+        try {
+            $resp = $this->get("/rest/api/3/issue/{$issueKey}/editmeta");
+        } catch (\Throwable $e) {
+            return [];
+        }
+        $fieldsMap = $resp['fields'] ?? [];
+
+        // Index para fallback por nombre (cuando el caller pasa "Roadmap Activity Type"
+        // en vez de la key customfield_xxx).
+        $nameToKey = [];
+        foreach ($fieldsMap as $k => $f) {
+            if (!empty($f['name'])) {
+                $nameToKey[mb_strtolower((string) $f['name'])] = $k;
+            }
+        }
+
+        $out = [];
+        $seen = [];
+        foreach ($fieldKeys as $input) {
+            $input = (string) $input;
+            $key = null;
+            if (isset($fieldsMap[$input])) {
+                $key = $input;
+            } else {
+                $lower = mb_strtolower($input);
+                if (isset($nameToKey[$lower])) {
+                    $key = $nameToKey[$lower];
+                }
+            }
+            if (!$key || isset($seen[$key])) continue;
+            $seen[$key] = true;
+
+            $f = $fieldsMap[$key];
+            $schema = $f['schema'] ?? [];
+            $type = (string) ($schema['type'] ?? 'string');
+            $items = isset($schema['items']) ? (string) $schema['items'] : null;
+            $allowed = [];
+            foreach (($f['allowedValues'] ?? []) as $av) {
+                $allowed[] = [
+                    'id'    => (string) ($av['id'] ?? ''),
+                    'value' => (string) ($av['value'] ?? $av['name'] ?? ''),
+                ];
+            }
+            $out[] = [
+                'key'           => $key,
+                'name'          => (string) ($f['name'] ?? $key),
+                'type'          => $type,
+                'items'         => $items,
+                'allowedValues' => $allowed,
+                'multiple'      => $type === 'array',
+                'required'      => true,
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Elige el nombre que mejor representa "la" subtarea del proyecto.
+     * Prefiere matches exactos a "subtarea/subtask/sub-task/tarea secundaria",
+     * luego cualquier nombre que contenga "sub". Si nada matchea, devuelve el primero.
+     */
+    private function preferredSubtaskName(array $subtaskTypes): ?string
+    {
+        if (empty($subtaskTypes)) return null;
+        $exact = ['subtarea', 'subtask', 'sub-task', 'sub task', 'tarea secundaria'];
+        foreach ($subtaskTypes as $t) {
+            if (in_array(mb_strtolower($t['name']), $exact, true)) {
                 return $t['name'];
             }
         }
-        return null;
+        foreach ($subtaskTypes as $t) {
+            if (mb_stripos($t['name'], 'sub') !== false) {
+                return $t['name'];
+            }
+        }
+        return $subtaskTypes[0]['name'];
+    }
+
+    /**
+     * Probe: intenta crear una subtarea con summary vacío para forzar que Jira
+     * devuelva todos los fieldErrors (incluyendo validators ocultos no expuestos
+     * en createmeta). Como summary es siempre required, no se crea el issue.
+     * Si por alguna razón se crea, lo borra para no dejar basura.
+     *
+     * @return array{fieldErrors: array<string,string>}
+     */
+    public function probeCreateSubtask(string $parentKey, string $issuetypeName): array
+    {
+        $parent = $this->getIssue($parentKey);
+        $projectKey = $parent['fields']['project']['key'] ?? '';
+        $projectId  = $parent['fields']['project']['id']  ?? '';
+        if (!$projectKey) {
+            return ['fieldErrors' => []];
+        }
+        $subtaskTypes = $this->listSubtaskIssueTypes($projectId);
+        $resolvedType = null;
+        foreach ($subtaskTypes as $t) {
+            if (mb_strtolower($t['name']) === mb_strtolower($issuetypeName)) {
+                $resolvedType = $t['name'];
+                break;
+            }
+        }
+        if (!$resolvedType) {
+            $resolvedType = $this->preferredSubtaskName($subtaskTypes);
+        }
+        if (!$resolvedType) {
+            return ['fieldErrors' => []];
+        }
+
+        $fields = [
+            'project'   => ['key' => $projectKey],
+            'parent'    => ['key' => $parentKey],
+            'summary'   => '',
+            'issuetype' => ['name' => $resolvedType],
+        ];
+        try {
+            $created = $this->post('/rest/api/3/issue', ['fields' => $fields]);
+            if (!empty($created['key'])) {
+                try { $this->deleteIssue($created['key']); } catch (\Throwable $e2) {}
+            }
+            return ['fieldErrors' => [], 'errorMessages' => []];
+        } catch (JiraApiException $e) {
+            $errors = $e->fieldErrors;
+            unset($errors['summary']);
+            // Filtrar mensajes irrelevantes (los que solo hablan de summary).
+            $messages = array_values(array_filter($e->errorMessages, function ($m) {
+                return stripos($m, 'summary') === false
+                    && stripos($m, 'resumen') === false;
+            }));
+            return ['fieldErrors' => $errors, 'errorMessages' => $messages];
+        }
+    }
+
+    public function deleteIssue(string $issueKey): void
+    {
+        $url = $this->baseUrl . "/rest/api/3/issue/{$issueKey}";
+        $result = $this->executeWithProxyFallback([
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST  => 'DELETE',
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: ' . $this->authHeader,
+                'Accept: application/json',
+            ],
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $httpCode = $result['httpCode'];
+        $error    = $result['error'];
+        $response = $result['response'];
+        if ($error) {
+            throw new \RuntimeException("Error de cURL: {$error}");
+        }
+        if ($httpCode >= 400) {
+            self::throwJiraError($httpCode, $response);
+        }
     }
 
     /**
@@ -616,9 +1026,7 @@ class JiraClient
             throw new \RuntimeException("Error de cURL: {$error}");
         }
         if ($httpCode >= 400) {
-            $body = json_decode($response, true);
-            $msg  = $body['errorMessages'][0] ?? $body['message'] ?? "HTTP {$httpCode}";
-            throw new \RuntimeException("Error de Jira API ({$httpCode}): {$msg}");
+            self::throwJiraError($httpCode, $response);
         }
     }
 }

@@ -34,7 +34,9 @@
       "Bash(curl -sSI -H \"Accept-Encoding: gzip\" https://jojurdi.com/jira-batman/)",
       "Bash(curl -sS -o /dev/null -w \"Sin Accept-Encoding:\\\\n  size=%{size_download} bytes\\\\n  time=%{time_total}s\\\\n\" https://jojurdi.com/jira-batman/)",
       "Bash(curl -sS -o /tmp/gz.bin -w \"\\\\nCon gzip:\\\\n  size=%{size_download} bytes\\\\n  time=%{time_total}s\\\\n\" -H \"Accept-Encoding: gzip\" --compressed https://jojurdi.com/jira-batman/)",
-      "Bash(curl -sS -o /dev/null -w '  intento __TRACKED_VAR__: time=%{time_total}s size=%{size_download}b\\\\n' --compressed https://jojurdi.com/jira-batman/)"
+      "Bash(curl -sS -o /dev/null -w '  intento __TRACKED_VAR__: time=%{time_total}s size=%{size_download}b\\\\n' --compressed https://jojurdi.com/jira-batman/)",
+      "Read(//etc/nginx/**)",
+      "Read(//usr/local/etc/nginx/**)"
     ]
   }
 }

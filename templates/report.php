@@ -25,6 +25,10 @@
             --color-warning-bg: #fff7e6;
             --color-danger: #de350b;
             --color-danger-bg: #ffebe6;
+            --row-amort-bg: #ecf9f1;
+            --row-amort-bg-strong: #d8f3e2;
+            --row-non-amort-bg: #f1f2f4;
+            --row-non-amort-bg-strong: #e6e8ec;
         }
 
         [data-theme="dark"] {
@@ -45,6 +49,10 @@
             --color-warning-bg: #3d2e0e;
             --color-danger: #ff5630;
             --color-danger-bg: #3d1c14;
+            --row-amort-bg: rgba(54, 179, 126, 0.10);
+            --row-amort-bg-strong: rgba(54, 179, 126, 0.20);
+            --row-non-amort-bg: rgba(160, 168, 179, 0.06);
+            --row-non-amort-bg-strong: rgba(160, 168, 179, 0.14);
         }
         :root {
             --space-1: 0.25rem;
@@ -150,6 +158,34 @@
             border-color: var(--color-border-strong);
             color: var(--color-text);
         }
+
+        .btn-my-tasks {
+            background: var(--color-primary);
+            border: 1px solid var(--color-primary);
+            color: #ffffff;
+            height: 32px;
+            padding: 0 var(--space-3);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            transition: all var(--t-fast);
+            text-decoration: none;
+            box-shadow: 0 1px 2px rgba(9, 30, 66, 0.10);
+        }
+        .btn-my-tasks:hover {
+            background: var(--color-primary-hover);
+            border-color: var(--color-primary-hover);
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(9, 30, 66, 0.18);
+        }
+        .btn-my-tasks:active { transform: translateY(0); }
+        .btn-my-tasks svg { flex-shrink: 0; }
 
         .filters {
             display: flex;
@@ -911,6 +947,25 @@
         .status-tag.s-progress{ background: var(--color-primary-bg); color: var(--color-primary); }
         .status-tag.s-todo    { background: var(--color-bg-subtle); color: var(--color-text-muted); }
         .status-tag.s-blocked { background: var(--color-danger-bg); color: var(--color-danger); }
+
+        .amort-pill, .non-amort-pill {
+            font-size: 0.65rem;
+            padding: 2px 7px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            white-space: nowrap;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            vertical-align: middle;
+        }
+        .amort-pill     { background: var(--color-success-bg); color: var(--color-success); }
+        .non-amort-pill { background: var(--color-bg-subtle);  color: var(--color-text-muted); }
+        .amort-pill.sm, .non-amort-pill.sm {
+            font-size: 0.58rem;
+            padding: 1px 5px;
+            letter-spacing: 0.03em;
+        }
 
         .mono {
             font-family: 'SF Mono', Monaco, Consolas, 'Courier New', monospace;
@@ -2035,6 +2090,31 @@
             letter-spacing: 0.04em;
         }
 
+        /* Amortizable (verde) / No amortizable (gris) — aplica en Concentrado, Captura de horas y Matriz */
+        tbody tr.row-amortizable { background: var(--row-amort-bg); }
+        tbody tr.row-amortizable:hover { background: var(--row-amort-bg-strong); }
+        tbody tr.row-non-amort { background: var(--row-non-amort-bg); }
+        tbody tr.row-non-amort:hover { background: var(--row-non-amort-bg-strong); }
+
+        .matrix-table tbody tr.row-amortizable td,
+        .matrix-table tbody tr.row-amortizable td.col-issue { background: var(--row-amort-bg); }
+        .matrix-table tbody tr.row-amortizable td.col-total { background: var(--row-amort-bg-strong); }
+        .matrix-table tbody tr.row-amortizable:hover td,
+        .matrix-table tbody tr.row-amortizable:hover td.col-issue { background: var(--row-amort-bg-strong); }
+        .matrix-table tbody tr.row-amortizable:hover td.col-total { background: var(--row-amort-bg-strong); }
+
+        .matrix-table tbody tr.row-non-amort td,
+        .matrix-table tbody tr.row-non-amort td.col-issue { background: var(--row-non-amort-bg); }
+        .matrix-table tbody tr.row-non-amort td.col-total { background: var(--row-non-amort-bg-strong); }
+        .matrix-table tbody tr.row-non-amort:hover td,
+        .matrix-table tbody tr.row-non-amort:hover td.col-issue { background: var(--row-non-amort-bg-strong); }
+        .matrix-table tbody tr.row-non-amort:hover td.col-total { background: var(--row-non-amort-bg-strong); }
+
+        .hier-init.hier-init-amort .hier-init-head { background: var(--row-amort-bg-strong); }
+        .hier-init.hier-init-non   .hier-init-head { background: var(--row-non-amort-bg-strong); }
+        .hier-init.hier-init-amort .hier-init-head:hover { background: var(--row-amort-bg-strong); filter: brightness(0.97); }
+        .hier-init.hier-init-non   .hier-init-head:hover { background: var(--row-non-amort-bg-strong); filter: brightness(0.97); }
+
         /* Toasts */
         .toast-container {
             position: fixed;
@@ -2157,8 +2237,9 @@ function jiraStatusClass(string $status): string {
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M6 12.5a.5.5 0 01.5.5v.5a.5.5 0 00.5.5h6a.5.5 0 00.5-.5v-11a.5.5 0 00-.5-.5h-6a.5.5 0 00-.5.5V3a.5.5 0 01-1 0v-.5A1.5 1.5 0 016.5.5h6A1.5 1.5 0 0114 2v11.5a1.5 1.5 0 01-1.5 1.5h-6A1.5 1.5 0 015 13.5V13a.5.5 0 01.5-.5z"/><path d="M.146 8.354a.5.5 0 010-.708l3-3a.5.5 0 11.708.708L1.707 7.5H10.5a.5.5 0 010 1H1.707l2.147 2.146a.5.5 0 01-.708.708l-3-3z"/></svg>
                 </a>
             <?php endif; ?>
-            <button class="btn-settings" onclick="openMyTasks()" title="Mis tareas asignadas">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <button class="btn-my-tasks" onclick="openMyTasks()" title="Ver y gestionar las tareas que tienes asignadas en Jira">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <span>Mis tareas asignadas</span>
             </button>
             <button class="btn-settings" onclick="openHelp()" title="Atajos de teclado (?)">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -2573,9 +2654,17 @@ function jiraStatusClass(string $status): string {
             <?php if (!empty($report['byHierarchy'])): ?>
             <div id="byHier-body" style="margin-bottom:1.5rem;">
                 <?php foreach ($report['byHierarchy'] as $iIdx => $init): ?>
-                <div class="hier-init">
+                <?php $_initAmortClass = !empty($init['key']) ? 'hier-init-amort' : 'hier-init-non'; ?>
+                <?php $_rowAmortClass  = !empty($init['key']) ? 'row-amortizable' : 'row-non-amort'; ?>
+                <div class="hier-init <?= $_initAmortClass ?>">
                     <div class="hier-init-head" onclick="toggleHier('i<?= $iIdx ?>')">
                         <span>
+                            <?php if (!empty($init['key'])): ?>
+                                <span class="amort-pill" title="Tiene iniciativa padre">Amortizable</span>
+                            <?php else: ?>
+                                <span class="non-amort-pill" title="Sin iniciativa padre">No amort.</span>
+                            <?php endif; ?>
+                            &nbsp;
                             <?php if ($init['key']): ?>
                                 <a class="key-link" href="<?= htmlspecialchars($jiraBaseUrl) ?>/browse/<?= htmlspecialchars($init['key']) ?>" target="_blank" onclick="event.stopPropagation()"><?= htmlspecialchars($init['key']) ?></a>
                                 &nbsp;&middot;&nbsp;
@@ -2614,7 +2703,8 @@ function jiraStatusClass(string $status): string {
                                             <?php $pct = $report['summary']['totalLogged'] > 0
                                                 ? round($iss['totalHours'] / $report['summary']['totalLogged'] * 100, 1)
                                                 : 0; ?>
-                                            <tr data-project="<?= htmlspecialchars($iss['project']) ?>"
+                                            <tr class="<?= $_rowAmortClass ?>"
+                                                data-project="<?= htmlspecialchars($iss['project']) ?>"
                                                 data-status="<?= htmlspecialchars($iss['status']) ?>"
                                                 data-initiative="<?= htmlspecialchars($init['key'] ?? '') ?>"
                                                 data-search="<?= htmlspecialchars(mb_strtolower($iss['issueKey'] . ' ' . $iss['summary'] . ' ' . $iss['project'])) ?>">
@@ -2702,7 +2792,9 @@ function jiraStatusClass(string $status): string {
                                 </thead>
                                 <tbody>
                                     <?php foreach ($day['worklogs'] as $wl): ?>
-                                        <tr data-wl-id="<?= htmlspecialchars($wl['id']) ?>"
+                                        <?php $_wlAmort = !empty($_issueInitiative[$wl['issueKey']] ?? '') ? 'row-amortizable' : 'row-non-amort'; ?>
+                                        <tr class="<?= $_wlAmort ?>"
+                                            data-wl-id="<?= htmlspecialchars($wl['id']) ?>"
                                             data-wl-seconds="<?= (int)$wl['timeSpentSeconds'] ?>"
                                             data-project="<?= htmlspecialchars($wl['project']) ?>"
                                             data-status="<?= htmlspecialchars($wl['status']) ?>"
@@ -2716,7 +2808,14 @@ function jiraStatusClass(string $status): string {
                                                 </a>
                                             </td>
                                             <td><?= htmlspecialchars($wl['project']) ?></td>
-                                            <td><?= htmlspecialchars(mb_strimwidth($wl['summary'], 0, 55, '...')) ?></td>
+                                            <td>
+                                                <?php if ($_wlAmort === 'row-amortizable'): ?>
+                                                    <span class="amort-pill sm" title="Amortizable">Amort</span>
+                                                <?php else: ?>
+                                                    <span class="non-amort-pill sm" title="No amortizable">No&nbsp;amort</span>
+                                                <?php endif; ?>
+                                                <?= htmlspecialchars(mb_strimwidth($wl['summary'], 0, 55, '...')) ?>
+                                            </td>
                                             <td><span class="status-tag <?= jiraStatusClass($wl['status']) ?>"><?= htmlspecialchars($wl['status']) ?></span></td>
                                             <td class="mono"><?= $wl['started'] ?></td>
                                             <td class="mono editable-duration" title="Doble-click para editar"><?= htmlspecialchars($wl['timeSpent']) ?></td>
@@ -2773,10 +2872,17 @@ function jiraStatusClass(string $status): string {
                         </thead>
                         <tbody>
                             <?php foreach ($mx['rows'] as $row): ?>
-                            <tr data-project="<?= htmlspecialchars($row['project']) ?>"
+                            <?php $_mxAmort = !empty($_issueInitiative[$row['issueKey']] ?? '') ? 'row-amortizable' : 'row-non-amort'; ?>
+                            <tr class="<?= $_mxAmort ?>"
+                                data-project="<?= htmlspecialchars($row['project']) ?>"
                                 data-initiative="<?= htmlspecialchars($_issueInitiative[$row['issueKey']] ?? '') ?>"
                                 data-search="<?= htmlspecialchars(mb_strtolower($row['issueKey'] . ' ' . $row['summary'] . ' ' . $row['project'])) ?>">
                                 <td class="col-issue">
+                                    <?php if ($_mxAmort === 'row-amortizable'): ?>
+                                        <span class="amort-pill sm" title="Amortizable">A</span>
+                                    <?php else: ?>
+                                        <span class="non-amort-pill sm" title="No amortizable">N</span>
+                                    <?php endif; ?>
                                     <a class="key-link" href="<?= htmlspecialchars($jiraBaseUrl) ?>/browse/<?= htmlspecialchars($row['issueKey']) ?>" target="_blank"><?= htmlspecialchars($row['issueKey']) ?></a>
                                     <span style="color:#aaa;margin-left:0.3rem;font-size:0.7rem;"><?= htmlspecialchars(mb_strimwidth($row['summary'], 0, 40, '...')) ?></span>
                                 </td>
@@ -3034,8 +3140,41 @@ function jiraStatusClass(string $status): string {
             <input type="text" id="st-summary" placeholder="Resumen de la subtarea">
         </div>
         <div class="field">
+            <label for="st-issuetype">Tipo</label>
+            <select id="st-issuetype" class="select-filter" style="width:100%; max-width:none;">
+                <option value="">Cargando…</option>
+            </select>
+            <div class="field-hint" id="st-issuetype-hint" hidden></div>
+        </div>
+        <div id="st-required-fields"></div>
+        <div class="field">
             <label for="st-description">Descripción <span style="color:var(--color-text-subtle); font-weight:normal;">(opcional)</span></label>
-            <textarea id="st-description" rows="4" placeholder="Detalles adicionales…"
+            <textarea id="st-description" rows="3" placeholder="Detalles adicionales para la subtarea…"
+                      style="width:100%; padding:8px 10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); font-size:0.88rem; font-family:inherit; color:var(--color-text); background:var(--color-bg); resize:vertical;"></textarea>
+        </div>
+        <div class="field">
+            <label for="st-duration">Tiempo registrado <span style="color:var(--color-text-subtle); font-weight:normal;">(opcional · queda como worklog en la nueva subtarea)</span></label>
+            <input type="text" id="st-duration" placeholder="ej. 2h 30m  ·  1h  ·  45m">
+            <div class="duration-chips" id="st-duration-chips">
+                <button type="button" class="chip" data-dur="30m">30m</button>
+                <button type="button" class="chip" data-dur="1h">1h</button>
+                <button type="button" class="chip" data-dur="2h">2h</button>
+                <button type="button" class="chip" data-dur="4h">4h</button>
+            </div>
+        </div>
+        <div id="st-datetime-field" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
+            <div class="field">
+                <label for="st-date">Fecha del tiempo registrado</label>
+                <input type="date" id="st-date">
+            </div>
+            <div class="field">
+                <label for="st-time">Hora inicio</label>
+                <input type="time" id="st-time" value="09:00">
+            </div>
+        </div>
+        <div class="field" id="st-worklog-comment-field">
+            <label for="st-worklog-comment">Lo que se hizo <span style="color:var(--color-text-subtle); font-weight:normal;">(opcional · descripción del worklog)</span></label>
+            <textarea id="st-worklog-comment" rows="2" placeholder="¿Qué se hizo en este tiempo?"
                       style="width:100%; padding:8px 10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); font-size:0.88rem; font-family:inherit; color:var(--color-text); background:var(--color-bg); resize:vertical;"></textarea>
         </div>
         <div id="st-error" class="form-error" hidden></div>
@@ -3044,6 +3183,29 @@ function jiraStatusClass(string $status): string {
             <div style="flex:1"></div>
             <button class="btn-sm" onclick="closeSubtask()">Cancelar</button>
             <button class="btn-sm primary" id="st-submit" onclick="submitSubtask()">Crear y poner en uso</button>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="transitionFieldsModal">
+    <div class="dialog">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4);">
+            <h2 id="tf-title" style="margin-bottom:0;">Confirmar cambio de estado</h2>
+            <button onclick="closeTransitionFields()" class="dialog-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <div id="tf-context" class="field-hint" style="margin-bottom:var(--space-3);"></div>
+        <div class="field" id="tf-comment-field" hidden>
+            <label for="tf-comment">Comentario <span style="color:var(--color-danger);">*</span></label>
+            <textarea id="tf-comment" rows="3" placeholder="Comentario obligatorio para esta transición…"
+                      style="width:100%; padding:8px 10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); font-size:0.88rem; font-family:inherit; color:var(--color-text); background:var(--color-bg); resize:vertical;"></textarea>
+        </div>
+        <div id="tf-required-fields"></div>
+        <div id="tf-error" class="form-error" hidden></div>
+        <div class="dialog-footer">
+            <span class="kbd-hint">⌘ Enter para confirmar</span>
+            <div style="flex:1"></div>
+            <button class="btn-sm" onclick="closeTransitionFields()">Cancelar</button>
+            <button class="btn-sm primary" id="tf-submit" onclick="submitTransitionFields()">Confirmar</button>
         </div>
     </div>
 </div>
@@ -4333,7 +4495,7 @@ function setBtnLoading(btn, loading, originalText) {
             var subtasksCount = (iss.subtasks || []).length;
             var subtasksHtml = '';
             if (subtasksCount > 0) {
-                subtasksHtml = '<div class="mt-subtasks" hidden>' +
+                subtasksHtml = '<div class="mt-subtasks">' +
                     iss.subtasks.map(function(st) {
                         var stType = (st.issuetype || '').toLowerCase();
                         var stIcon = '✓';
@@ -4365,7 +4527,7 @@ function setBtnLoading(btn, loading, originalText) {
             }
 
             var subToggle = subtasksCount > 0
-                ? '<button class="mt-subtasks-toggle" data-action="toggle-subtasks" type="button">▾ ' + subtasksCount + ' subtarea' + (subtasksCount > 1 ? 's' : '') + '</button>'
+                ? '<button class="mt-subtasks-toggle expanded" data-action="toggle-subtasks" type="button">▾ ' + subtasksCount + ' subtarea' + (subtasksCount > 1 ? 's' : '') + '</button>'
                 : '';
 
             return '<div class="mt-row-wrap" data-key="' + escAttr(iss.key) + '">' +
@@ -4725,34 +4887,309 @@ function setBtnLoading(btn, loading, originalText) {
     }
 
     function applyStatusFromPopover(issueKey, transitionId, transitionName, statusBtn, pop) {
-        pop.innerHTML = '<div class="mt-popover-loading"><span class="spinner"></span> Aplicando…</div>';
+        pop.innerHTML = '<div class="mt-popover-loading"><span class="spinner"></span> Verificando…</div>';
+        // 1) Pre-fetch: ¿esta transición requiere campos?
         fetch(location.pathname + location.search, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'apply_transition', issueKey: issueKey, transitionId: transitionId })
+            body: JSON.stringify({ action: 'transition_required_fields', issueKey: issueKey, transitionId: transitionId })
         })
         .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (!data.ok) throw new Error(data.error || 'Error');
-            // Actualizar UI
-            statusBtn.textContent = data.status || transitionName;
-            statusBtn.className = 'mt-status-current ' + jiraStatusClassJs(data.status || transitionName);
-            // Sincronizar el dataset local
-            for (var i = 0; i < myTasksData.length; i++) {
-                if (myTasksData[i].key === issueKey) {
-                    myTasksData[i].status = data.status || transitionName;
-                    break;
-                }
+        .then(function(info) {
+            if (!info.ok) throw new Error(info.error || 'Error consultando campos');
+            var hasFields = (info.fields && info.fields.length) || info.commentRequired;
+            if (hasFields) {
+                closeAllPopovers();
+                openTransitionFieldsModal(issueKey, transitionId, transitionName, statusBtn, info);
+                return;
             }
-            populateTypeFilters();
-            closeAllPopovers();
-            toast(issueKey + ' → ' + (data.status || transitionName), 'success');
+            // No requiere nada → aplicar directo.
+            doApplyTransition(issueKey, transitionId, transitionName, statusBtn, pop, {}, '');
         })
         .catch(function(err) {
-            pop.innerHTML = '<div class="mt-popover-empty" style="color:var(--color-danger);">' + escHtml(err.message) + '</div>';
-            toast('No se pudo cambiar el estado: ' + err.message, 'error');
+            pop.innerHTML = '<div class="mt-popover-empty" style="color:var(--color-danger);">Error: ' + escHtml(err.message) + '</div>';
         });
     }
+
+    function doApplyTransition(issueKey, transitionId, transitionName, statusBtn, pop, extraFields, comment) {
+        if (pop) pop.innerHTML = '<div class="mt-popover-loading"><span class="spinner"></span> Aplicando…</div>';
+        return fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'apply_transition',
+                issueKey: issueKey,
+                transitionId: transitionId,
+                extraFields: extraFields || {},
+                comment: comment || ''
+            })
+        })
+        .then(function(r) {
+            return r.json().then(function(data) { return { status: r.status, data: data }; });
+        })
+        .then(function(env) {
+            var data = env.data;
+            if (data.ok) {
+                statusBtn.textContent = data.status || transitionName;
+                statusBtn.className = 'mt-status-current ' + jiraStatusClassJs(data.status || transitionName);
+                for (var i = 0; i < myTasksData.length; i++) {
+                    if (myTasksData[i].key === issueKey) {
+                        myTasksData[i].status = data.status || transitionName;
+                        break;
+                    }
+                }
+                populateTypeFilters();
+                closeAllPopovers();
+                toast(issueKey + ' → ' + (data.status || transitionName), 'success');
+                return;
+            }
+            // Fallo: si trae fieldErrors o el comentario es obligatorio,
+            // recuperar metadata y abrir el modal con esos campos.
+            var fieldErrors = data.fieldErrors || {};
+            var keys = Object.keys(fieldErrors).filter(function(k) { return k !== 'comment'; });
+            var commentRequired = !!fieldErrors.comment
+                || /comentario|comment/i.test(data.error || '');
+            if (keys.length === 0 && !commentRequired) {
+                throw new Error(data.error || 'Error');
+            }
+            if (keys.length === 0) {
+                // Solo comentario: abrir modal (o re-abrir/merge si ya estaba abierto).
+                closeAllPopovers();
+                openTransitionFieldsModal(issueKey, transitionId, transitionName, statusBtn, {
+                    commentRequired: true,
+                    fields: []
+                });
+                var e = new Error('Faltan campos: comentario');
+                e.code = 'NEEDS_MORE_FIELDS';
+                throw e;
+            }
+            // Pedir metadata de los campos por issue (editmeta).
+            return fetch(location.pathname + location.search, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'issue_fields_metadata', issueKey: issueKey, fieldKeys: keys })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(meta) {
+                if (!meta.ok) throw new Error(meta.error || 'No se pudo obtener metadata');
+                closeAllPopovers();
+                openTransitionFieldsModal(issueKey, transitionId, transitionName, statusBtn, {
+                    commentRequired: commentRequired,
+                    fields: meta.fields || []
+                });
+                var e = new Error('Faltan campos: ' + keys.join(', '));
+                e.code = 'NEEDS_MORE_FIELDS';
+                throw e;
+            });
+        })
+        .catch(function(err) {
+            if (err.code === 'NEEDS_MORE_FIELDS') {
+                // El modal ya muestra los campos nuevos; no toast de error.
+                throw err;
+            }
+            if (pop) pop.innerHTML = '<div class="mt-popover-empty" style="color:var(--color-danger);">' + escHtml(err.message) + '</div>';
+            toast('No se pudo cambiar el estado: ' + err.message, 'error');
+            throw err;
+        });
+    }
+
+    var _tfCtx = null; // contexto del modal de transición
+
+    function probeTransitionForExtraFields(issueKey, transitionId) {
+        // Probe seguro: comment vacío garantiza que la transición sea rechazada por Jira.
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'apply_transition',
+                issueKey: issueKey,
+                transitionId: transitionId,
+                extraFields: {},
+                comment: ''
+            })
+        })
+        .then(function(r) {
+            return r.json().then(function(data) { return { status: r.status, data: data }; });
+        })
+        .then(function(env) {
+            if (env.data.ok) return;
+            var fieldErrors = env.data.fieldErrors || {};
+            var msgs = (typeof env.data.errorMessages !== 'undefined' && env.data.errorMessages)
+                ? env.data.errorMessages
+                : ((env.data.error && [env.data.error]) || []);
+            var keys = Object.keys(fieldErrors).filter(function(k) { return k !== 'comment'; });
+            var nameMatches = msgs.map(function(m) {
+                var match = m.match(/El campo\s+(.+?)\s+es obligatorio/i)
+                         || m.match(/Field\s+'?(.+?)'?\s+is required/i);
+                return match ? match[1].trim() : null;
+            }).filter(Boolean);
+            if (!keys.length && !nameMatches.length) return;
+
+            var box = document.getElementById('tf-required-fields');
+            var existingKeys = {};
+            Array.prototype.forEach.call(box.querySelectorAll('[data-fkey]'), function(el) {
+                existingKeys[el.dataset.fkey] = true;
+            });
+
+            // Cargar editmeta del issue para resolver names → keys + allowedValues.
+            // Pedimos metadata de los keys conocidos; para names parseados de errorMessages,
+            // pedimos el editmeta completo y resolvemos por name.
+            return fetch(location.pathname + location.search, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'issue_fields_metadata', issueKey: issueKey, fieldKeys: keys.concat(nameMatches) })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(meta) {
+                if (!meta.ok) return;
+                var byKey = {};
+                var byNameLower = {};
+                (meta.fields || []).forEach(function(f) {
+                    byKey[f.key] = f;
+                    byNameLower[(f.name || '').toLowerCase()] = f;
+                });
+                var seen = {};
+                var newFields = [];
+                keys.forEach(function(k) {
+                    if (existingKeys[k] || seen[k]) return;
+                    var f = byKey[k];
+                    if (!f) return;
+                    seen[k] = true;
+                    newFields.push(f);
+                });
+                nameMatches.forEach(function(name) {
+                    var f = byNameLower[name.toLowerCase()];
+                    if (!f || existingKeys[f.key] || seen[f.key]) return;
+                    seen[f.key] = true;
+                    newFields.push(f);
+                });
+                if (!newFields.length) return;
+                var tempId = 'tf-required-fields-tmp-' + Date.now();
+                var tempDiv = document.createElement('div');
+                tempDiv.id = tempId;
+                box.parentNode.insertBefore(tempDiv, box.nextSibling);
+                renderRequiredFields(newFields, tempId);
+                while (tempDiv.firstChild) box.appendChild(tempDiv.firstChild);
+                tempDiv.remove();
+                var ctxEl = document.getElementById('tf-context');
+                ctxEl.textContent = ctxEl.textContent + ' · ' + newFields.length + ' campo(s) detectado(s)';
+            });
+        })
+        .catch(function() { /* probe es best-effort: silencioso si falla */ });
+    }
+
+    window.closeTransitionFields = function() {
+        document.getElementById('transitionFieldsModal').classList.remove('active');
+        _tfCtx = null;
+    };
+
+    function openTransitionFieldsModal(issueKey, transitionId, transitionName, statusBtn, info) {
+        var modalEl = document.getElementById('transitionFieldsModal');
+        var commentField = document.getElementById('tf-comment-field');
+        var commentInput = document.getElementById('tf-comment');
+        var box = document.getElementById('tf-required-fields');
+        var btn = document.getElementById('tf-submit');
+        var errEl = document.getElementById('tf-error');
+        var alreadyOpen = modalEl.classList.contains('active');
+
+        if (!alreadyOpen) {
+            _tfCtx = { issueKey: issueKey, transitionId: transitionId, transitionName: transitionName, statusBtn: statusBtn };
+            document.getElementById('tf-title').textContent = 'Cambiar estado a “' + transitionName + '”';
+            document.getElementById('tf-context').textContent = issueKey + ' · faltan datos requeridos por Jira para esta transición';
+            commentInput.value = '';
+            commentField.hidden = !info.commentRequired;
+            renderRequiredFields(info.fields || [], 'tf-required-fields');
+            errEl.hidden = true;
+            btn.disabled = false;
+            btn.textContent = 'Confirmar';
+            modalEl.classList.add('active');
+            setTimeout(function() {
+                (info.commentRequired ? commentInput : (box.querySelector('[data-fkey]') || commentInput)).focus();
+            }, 50);
+            // Probe: si Jira solo expuso el comment, intentar detectar validators
+            // ocultos enviando un apply_transition con comentario vacío. Como sabemos
+            // que el comment es required, Jira rechazará sin aplicar la transición y
+            // devolverá los errores de todos los demás campos requeridos.
+            if (info.commentRequired && (info.fields || []).length === 0) {
+                probeTransitionForExtraFields(issueKey, transitionId);
+            }
+            return;
+        }
+
+        // Modal ya abierto: merge — Jira pidió MÁS campos al confirmar.
+        if (info.commentRequired && commentField.hidden) {
+            commentField.hidden = false;
+        }
+        // Filtrar fields que ya están en el modal por su data-fkey
+        var existingKeys = {};
+        Array.prototype.forEach.call(box.querySelectorAll('[data-fkey]'), function(el) {
+            existingKeys[el.dataset.fkey] = true;
+        });
+        var newFields = (info.fields || []).filter(function(f) { return !existingKeys[f.key]; });
+        if (newFields.length) {
+            // Render en contenedor temporal y mover los nodos al box.
+            var tempId = 'tf-required-fields-tmp-' + Date.now();
+            var tempDiv = document.createElement('div');
+            tempDiv.id = tempId;
+            box.parentNode.insertBefore(tempDiv, box.nextSibling);
+            renderRequiredFields(newFields, tempId);
+            while (tempDiv.firstChild) box.appendChild(tempDiv.firstChild);
+            tempDiv.remove();
+        }
+        errEl.textContent = 'Jira pidió campos adicionales. Llénalos y vuelve a confirmar.';
+        errEl.hidden = false;
+        setBtnLoading(btn, false);
+        btn.disabled = false;
+        btn.textContent = 'Confirmar';
+        // Foco al primer campo nuevo (si hay)
+        var firstNew = box.querySelector('[data-fkey]:not([data-tf-seen="1"])');
+        Array.prototype.forEach.call(box.querySelectorAll('[data-fkey]'), function(el) { el.dataset.tfSeen = '1'; });
+        if (firstNew) setTimeout(function() { firstNew.focus(); }, 50);
+    }
+
+    window.submitTransitionFields = function() {
+        if (!_tfCtx) return;
+        var errEl = document.getElementById('tf-error');
+        var commentField = document.getElementById('tf-comment-field');
+        var commentInput = document.getElementById('tf-comment');
+        var commentRequired = !commentField.hidden;
+        var comment = commentInput.value.trim();
+        if (commentRequired && !comment) {
+            errEl.textContent = 'El comentario es obligatorio';
+            errEl.hidden = false;
+            return;
+        }
+        var collected = collectRequiredFields('tf-required-fields');
+        if (collected.missing.length) {
+            errEl.textContent = 'Faltan campos requeridos: ' + collected.missing.join(', ');
+            errEl.hidden = false;
+            return;
+        }
+        errEl.hidden = true;
+        var btn = document.getElementById('tf-submit');
+        setBtnLoading(btn, true, 'Aplicando…');
+        var ctx = _tfCtx;
+        doApplyTransition(ctx.issueKey, ctx.transitionId, ctx.transitionName, ctx.statusBtn, null, collected.fields, comment)
+            .then(function() { closeTransitionFields(); })
+            .catch(function(err) {
+                if (err && err.code === 'NEEDS_MORE_FIELDS') {
+                    // El modal ya se actualizó con los campos extra; no sobreescribir el aviso.
+                    setBtnLoading(btn, false);
+                    return;
+                }
+                errEl.textContent = err.message;
+                errEl.hidden = false;
+                setBtnLoading(btn, false);
+            });
+    };
+
+    /* Cmd+Enter para confirmar el modal de transición */
+    document.getElementById('transitionFieldsModal').addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            submitTransitionFields();
+        }
+    });
 
     /* Cerrar popovers al click fuera */
     document.addEventListener('click', function(e) {
@@ -4779,13 +5216,267 @@ function setBtnLoading(btn, loading, originalText) {
         }
         document.getElementById('st-summary').value = '';
         document.getElementById('st-description').value = '';
+        document.getElementById('st-duration').value = '';
+        document.getElementById('st-worklog-comment').value = '';
+        // Pre-llenar fecha y hora con hoy / ahora redondeada a la hora
+        var _now = new Date();
+        var _yyyy = _now.getFullYear();
+        var _mm = String(_now.getMonth() + 1).padStart(2, '0');
+        var _dd = String(_now.getDate()).padStart(2, '0');
+        document.getElementById('st-date').value = _yyyy + '-' + _mm + '-' + _dd;
+        document.getElementById('st-time').value = String(_now.getHours()).padStart(2, '0') + ':00';
+        // Quitar active de los chips
+        document.querySelectorAll('#st-duration-chips .chip.active').forEach(function(c) {
+            c.classList.remove('active');
+        });
         document.getElementById('st-error').hidden = true;
         var btn = document.getElementById('st-submit');
         btn.disabled = false;
         btn.textContent = 'Crear y poner en uso';
         document.getElementById('subtaskModal').classList.add('active');
+        loadSubtaskTypes(parentKey);
         setTimeout(function() { document.getElementById('st-summary').focus(); }, 50);
     };
+
+    function loadSubtaskTypes(parentKey) {
+        var sel = document.getElementById('st-issuetype');
+        var hint = document.getElementById('st-issuetype-hint');
+        sel.innerHTML = '<option value="">Cargando…</option>';
+        sel.disabled = true;
+        hint.hidden = true;
+        document.getElementById('st-required-fields').innerHTML = '';
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'subtask_types', parentKey: parentKey })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok || !Array.isArray(data.types) || data.types.length === 0) {
+                sel.innerHTML = '<option value="">(sin tipos disponibles)</option>';
+                hint.textContent = data.error || 'El proyecto no tiene tipos de subtarea.';
+                hint.hidden = false;
+                return;
+            }
+            sel.innerHTML = '';
+            data.types.forEach(function(t) {
+                var opt = document.createElement('option');
+                opt.value = t.name;
+                opt.dataset.id = t.id || '';
+                opt.textContent = t.name + (t.recommended ? ' (recomendado)' : '');
+                if (t.recommended) opt.selected = true;
+                sel.appendChild(opt);
+            });
+            sel.disabled = false;
+            loadRequiredFields(parentKey, sel.value, sel.options[sel.selectedIndex].dataset.id);
+        })
+        .catch(function(err) {
+            sel.innerHTML = '<option value="">(error)</option>';
+            hint.textContent = err.message;
+            hint.hidden = false;
+        });
+    }
+
+    /* Cuando el usuario cambia el tipo, recargar campos requeridos */
+    document.getElementById('st-issuetype').addEventListener('change', function() {
+        var parentKey = document.getElementById('st-parent').dataset.parent;
+        var opt = this.options[this.selectedIndex];
+        loadRequiredFields(parentKey, this.value, opt ? opt.dataset.id : '');
+    });
+
+    function loadRequiredFields(parentKey, issuetypeName, issuetypeId) {
+        var box = document.getElementById('st-required-fields');
+        if (!issuetypeName) { box.innerHTML = ''; return; }
+        box.innerHTML = '<div class="field-hint">Cargando campos del tipo…</div>';
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'subtask_required_fields',
+                parentKey: parentKey,
+                issuetypeName: issuetypeName,
+                issuetypeId: issuetypeId || ''
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) { box.innerHTML = '<div class="form-error">' + escHtml(data.error || 'Error') + '</div>'; return; }
+            renderRequiredFields(data.fields || [], 'st-required-fields');
+            // Probe asíncrono: detectar campos required ocultos por validators.
+            probeSubtaskForExtraFields(parentKey, issuetypeName);
+        })
+        .catch(function(err) {
+            box.innerHTML = '<div class="form-error">' + escHtml(err.message) + '</div>';
+        });
+    }
+
+    function probeSubtaskForExtraFields(parentKey, issuetypeName) {
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'subtask_probe',
+                parentKey: parentKey,
+                issuetypeName: issuetypeName
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) return;
+            var fe = data.fieldErrors || {};
+            var msgs = data.errorMessages || [];
+            var fieldKeysFromErrors = Object.keys(fe);
+            // Extraer nombres de campos mencionados en errorMessages.
+            var fieldNamesFromMsgs = msgs.map(function(m) {
+                var match = m.match(/El campo\s+(.+?)\s+es obligatorio/i)
+                         || m.match(/Field\s+'?(.+?)'?\s+is required/i)
+                         || m.match(/(.+?)\s+is required/i);
+                return match ? match[1].trim() : null;
+            }).filter(Boolean);
+            if (!fieldKeysFromErrors.length && !fieldNamesFromMsgs.length) return;
+
+            var box = document.getElementById('st-required-fields');
+            var existingKeys = {};
+            Array.prototype.forEach.call(box.querySelectorAll('[data-fkey]'), function(el) {
+                existingKeys[el.dataset.fkey] = true;
+            });
+
+            // Pedir metadata completa para resolver names → keys + allowedValues.
+            return fetch(location.pathname + location.search, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'subtask_required_fields',
+                    parentKey: parentKey,
+                    issuetypeName: issuetypeName,
+                    includeOptional: true
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(allData) {
+                if (!allData.ok) return;
+                var byKey = {};
+                var byNameLower = {};
+                (allData.fields || []).forEach(function(f) {
+                    byKey[f.key] = f;
+                    byNameLower[(f.name || '').toLowerCase()] = f;
+                });
+
+                var seen = {};
+                var fieldsToAdd = [];
+                fieldKeysFromErrors.forEach(function(k) {
+                    if (existingKeys[k] || seen[k]) return;
+                    var f = byKey[k];
+                    if (!f) return;
+                    f.required = true;
+                    seen[k] = true;
+                    fieldsToAdd.push(f);
+                });
+                fieldNamesFromMsgs.forEach(function(name) {
+                    var f = byNameLower[name.toLowerCase()];
+                    if (!f || existingKeys[f.key] || seen[f.key]) return;
+                    f.required = true;
+                    seen[f.key] = true;
+                    fieldsToAdd.push(f);
+                });
+
+                if (!fieldsToAdd.length) return;
+                var tempId = 'st-required-fields-tmp-' + Date.now();
+                var tempDiv = document.createElement('div');
+                tempDiv.id = tempId;
+                box.parentNode.insertBefore(tempDiv, box.nextSibling);
+                renderRequiredFields(fieldsToAdd, tempId);
+                while (tempDiv.firstChild) box.appendChild(tempDiv.firstChild);
+                tempDiv.remove();
+            });
+        })
+        .catch(function() { /* silencioso */ });
+    }
+
+    function renderRequiredFields(fields, containerId) {
+        var box = document.getElementById(containerId || 'st-required-fields');
+        if (!fields.length) { box.innerHTML = ''; return; }
+        // Required primero, luego opcionales
+        var sorted = fields.slice().sort(function(a, b) {
+            var ar = a.required === false ? 1 : 0;
+            var br = b.required === false ? 1 : 0;
+            return ar - br;
+        });
+        var html = '';
+        sorted.forEach(function(f) {
+            var inputId = 'st-req-' + f.key;
+            var isRequired = f.required !== false;
+            var marker = isRequired
+                ? ' <span style="color:var(--color-danger);">*</span>'
+                : ' <span style="color:var(--color-text-subtle);font-weight:normal;">(opcional)</span>';
+            var label = '<label for="' + escAttr(inputId) + '">' + escHtml(f.name) + marker + '</label>';
+            var dataReq = isRequired ? ' data-freq="1"' : '';
+            var input;
+            if (f.allowedValues && f.allowedValues.length) {
+                input = '<select id="' + escAttr(inputId) + '" class="select-filter" style="width:100%; max-width:none;"'
+                    + (f.multiple ? ' multiple' : '') + ' data-fkey="' + escAttr(f.key)
+                    + '" data-ftype="' + escAttr(f.type) + '" data-fitems="' + escAttr(f.items || '') + '"' + dataReq + '>';
+                if (!f.multiple) input += '<option value="">— Selecciona —</option>';
+                f.allowedValues.forEach(function(av) {
+                    input += '<option value="' + escAttr(av.id) + '">' + escHtml(av.value) + '</option>';
+                });
+                input += '</select>';
+            } else if (f.type === 'number') {
+                input = '<input type="number" step="any" id="' + escAttr(inputId)
+                    + '" data-fkey="' + escAttr(f.key) + '" data-ftype="number"' + dataReq + '>';
+            } else if (f.type === 'date') {
+                input = '<input type="date" id="' + escAttr(inputId)
+                    + '" data-fkey="' + escAttr(f.key) + '" data-ftype="date"' + dataReq + '>';
+            } else if (f.type === 'datetime') {
+                input = '<input type="datetime-local" id="' + escAttr(inputId)
+                    + '" data-fkey="' + escAttr(f.key) + '" data-ftype="datetime"' + dataReq + '>';
+            } else {
+                input = '<input type="text" id="' + escAttr(inputId)
+                    + '" data-fkey="' + escAttr(f.key) + '" data-ftype="' + escAttr(f.type) + '"' + dataReq + '>';
+            }
+            html += '<div class="field">' + label + input + '</div>';
+        });
+        box.innerHTML = html;
+    }
+
+    function collectRequiredFields(containerId) {
+        var box = document.getElementById(containerId || 'st-required-fields');
+        var out = {};
+        var missing = [];
+        Array.prototype.forEach.call(box.querySelectorAll('[data-fkey]'), function(el) {
+            var key = el.dataset.fkey;
+            var type = el.dataset.ftype || 'string';
+            var isRequired = el.dataset.freq === '1';
+            var labelText = el.previousElementSibling ? el.previousElementSibling.textContent.replace('*','').replace('(opcional)','').trim() : key;
+            var value;
+            if (el.tagName === 'SELECT' && el.multiple) {
+                var ids = Array.prototype.map.call(el.selectedOptions, function(o) { return o.value; }).filter(Boolean);
+                if (!ids.length) { if (isRequired) missing.push(labelText); return; }
+                value = ids.map(function(id) { return { id: id }; });
+            } else if (el.tagName === 'SELECT') {
+                if (!el.value) { if (isRequired) missing.push(labelText); return; }
+                value = { id: el.value };
+            } else {
+                if (!el.value) { if (isRequired) missing.push(labelText); return; }
+                value = (type === 'number') ? Number(el.value) : el.value;
+            }
+            out[key] = value;
+        });
+        return { fields: out, missing: missing };
+    }
+
+    /* Chips de duración (rellenan el input de duración) */
+    (function() {
+        var durInput = document.getElementById('st-duration');
+        if (!durInput) return;
+        document.querySelectorAll('#st-duration-chips .chip').forEach(function(chip) {
+            chip.addEventListener('click', function() {
+                document.querySelectorAll('#st-duration-chips .chip.active').forEach(function(c) { c.classList.remove('active'); });
+                durInput.value = chip.dataset.dur;
+                chip.classList.add('active');
+            });
+        });
+    })();
     window.closeSubtask = function() {
         document.getElementById('subtaskModal').classList.remove('active');
     };
@@ -4794,6 +5485,11 @@ function setBtnLoading(btn, loading, originalText) {
         var parentKey = document.getElementById('st-parent').dataset.parent;
         var summary = document.getElementById('st-summary').value.trim();
         var description = document.getElementById('st-description').value.trim();
+        var issuetypeName = document.getElementById('st-issuetype').value;
+        var worklogDuration = document.getElementById('st-duration').value.trim();
+        var worklogComment = document.getElementById('st-worklog-comment').value.trim();
+        var worklogDate = document.getElementById('st-date').value;
+        var worklogTime = document.getElementById('st-time').value;
 
         var errEl = document.getElementById('st-error');
         if (!summary) {
@@ -4801,10 +5497,16 @@ function setBtnLoading(btn, loading, originalText) {
             errEl.hidden = false;
             return;
         }
+        var collected = collectRequiredFields('st-required-fields');
+        if (collected.missing.length) {
+            errEl.textContent = 'Faltan campos requeridos: ' + collected.missing.join(', ');
+            errEl.hidden = false;
+            return;
+        }
         errEl.hidden = true;
 
         var btn = document.getElementById('st-submit');
-        setBtnLoading(btn, true, 'Creando…');
+        setBtnLoading(btn, true, worklogDuration ? 'Creando y registrando…' : 'Creando…');
 
         fetch(location.pathname + location.search, {
             method: 'POST',
@@ -4813,20 +5515,27 @@ function setBtnLoading(btn, loading, originalText) {
                 action: 'create_subtask',
                 parentKey: parentKey,
                 summary: summary,
-                description: description
+                description: description,
+                issuetypeName: issuetypeName,
+                extraFields: collected.fields,
+                worklogDuration: worklogDuration,
+                worklogComment: worklogComment,
+                worklogDate: worklogDate,
+                worklogTime: worklogTime
             })
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (!data.ok) throw new Error(data.error || 'Error desconocido');
             closeSubtask();
-            var msg = 'Subtarea ' + data.key + ' creada';
-            if (data.transitionName) {
-                msg += ' (' + data.transitionName + ')';
-            } else if (data.transitionFailed) {
-                msg += ' — no se pudo cambiar el estado';
+            var parts = ['Subtarea ' + data.key + ' creada'];
+            if (data.transitionName) parts.push(data.transitionName);
+            else if (data.transitionFailed) parts.push('estado no cambió');
+            if (data.worklog && data.worklog.ok) parts.push(data.worklog.duration + ' registradas');
+            toast(parts.join(' · '), 'success');
+            if (data.worklog && data.worklog.ok === false) {
+                toast('No se pudo registrar el worklog: ' + (data.worklog.error || ''), 'warning');
             }
-            toast(msg, 'success');
             // Si el modal de Mis tareas está abierto, agregar la subtarea a la lista
             if (data.issue && document.getElementById('myTasksModal').classList.contains('active')) {
                 myTasksData.unshift(data.issue);
