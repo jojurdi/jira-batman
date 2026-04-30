@@ -411,26 +411,218 @@
             flex-direction: column;
             gap: 3px;
         }
-        .heatmap-cell {
-            width: 14px;
-            height: 14px;
-            border-radius: 3px;
+        .cal-section {
+            margin-bottom: var(--space-5);
+            padding: var(--space-4);
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+        .cal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-3);
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            cursor: pointer;
+            user-select: none;
+        }
+        .cal-section.collapsed .cal-header {
+            margin-bottom: 0;
+        }
+        .cal-section.collapsed .cal-grid {
+            display: none;
+        }
+        .cal-toggle {
+            background: none;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-muted);
+            width: 26px;
+            height: 26px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all var(--t-fast);
+        }
+        .cal-toggle:hover {
             background: var(--color-bg-subtle);
-            transition: transform var(--t-fast);
-            display: inline-block;
+            color: var(--color-text);
         }
-        .heatmap-cell:hover {
-            transform: scale(1.3);
-            box-shadow: 0 0 0 1px var(--color-border-strong);
+        .cal-chevron {
+            transition: transform var(--t-default);
         }
-        .heatmap-cell.empty { background: transparent; }
-        .heatmap-cell.h0 { background: var(--color-bg-subtle); }
-        .heatmap-cell.h1 { background: #c6e9d3; }
-        .heatmap-cell.h2 { background: #84d6a4; }
-        .heatmap-cell.h3 { background: #38b878; }
-        .heatmap-cell.h4 { background: var(--color-success); }
-        .heatmap-cell.h5 { background: var(--color-warning); }
-        .heatmap-cell.weekend { opacity: 0.55; }
+        .cal-section.collapsed .cal-chevron {
+            transform: rotate(-90deg);
+        }
+        .cal-nav {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        .cal-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--color-text);
+            min-width: 140px;
+            text-align: center;
+        }
+        .cal-nav-btn {
+            width: 26px;
+            height: 26px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-muted);
+            text-decoration: none;
+            font-size: 1rem;
+            line-height: 1;
+            transition: all var(--t-fast);
+        }
+        .cal-nav-btn:hover {
+            background: var(--color-bg-subtle);
+            color: var(--color-text);
+            border-color: var(--color-border-strong);
+        }
+        .cal-stats {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .cal-stats strong {
+            color: var(--color-text);
+            font-feature-settings: "tnum";
+        }
+        .cal-stats-sep { color: var(--color-border); }
+        .cal-warn { color: var(--color-warning); }
+        .cal-warn strong { color: var(--color-warning); }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .cal-dow {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-text-subtle);
+            text-align: center;
+            padding: 4px 0;
+            font-weight: 600;
+        }
+        .cal-cell {
+            aspect-ratio: 1.4 / 1;
+            min-height: 56px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            padding: 6px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            text-decoration: none;
+            color: var(--color-text);
+            position: relative;
+            overflow: hidden;
+            transition: all var(--t-fast);
+        }
+        .cal-cell:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+            z-index: 2;
+        }
+        .cal-cell.out-month {
+            opacity: 0.4;
+        }
+        .cal-cell.weekend {
+            background: var(--color-bg-alt);
+        }
+        .cal-cell.no-data {
+            color: var(--color-text-subtle);
+        }
+        .cal-cell.today {
+            border-color: var(--color-primary);
+            border-width: 2px;
+            padding: 5px 7px;
+        }
+        .cal-cell.complete {
+            background: var(--color-success-bg);
+            border-color: var(--color-success);
+        }
+        .cal-cell.partial {
+            background: var(--color-warning-bg);
+            border-color: #ffd591;
+        }
+        .cal-cell.missing {
+            background: var(--color-danger-bg);
+            border-color: #ffbdad;
+        }
+        .cal-cell.over {
+            background: #fff4d6;
+            border-color: var(--color-warning);
+        }
+        .cal-day-num {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text);
+            line-height: 1;
+        }
+        .cal-cell.out-month .cal-day-num { color: var(--color-text-subtle); }
+        .cal-cell.today .cal-day-num { color: var(--color-primary); }
+        .cal-cell.complete .cal-day-num { color: var(--color-success); }
+        .cal-cell.over .cal-day-num { color: var(--color-warning); }
+
+        .cal-day-hours {
+            font-size: 0.78rem;
+            font-weight: 600;
+            font-feature-settings: "tnum";
+            color: var(--color-text);
+            margin-top: auto;
+            line-height: 1.1;
+        }
+        .cal-day-hours.muted {
+            color: var(--color-danger);
+            font-weight: 500;
+        }
+        .cal-cell.complete .cal-day-hours { color: var(--color-success); }
+        .cal-cell.over .cal-day-hours     { color: var(--color-warning); }
+
+        .cal-day-bar {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 3px;
+            background: var(--color-bg-subtle);
+            display: block;
+        }
+        .cal-day-bar-fill {
+            display: block;
+            height: 100%;
+            background: var(--color-success);
+            transition: width var(--t-default);
+        }
+        .cal-cell.over .cal-day-bar-fill     { background: var(--color-warning); }
+        .cal-cell.partial .cal-day-bar-fill  { background: var(--color-warning); }
+
+        @media (max-width: 760px) {
+            .cal-cell { min-height: 44px; padding: 4px 5px; }
+            .cal-day-num   { font-size: 0.75rem; }
+            .cal-day-hours { font-size: 0.7rem; }
+            .cal-stats     { font-size: 0.72rem; }
+        }
 
         .byproject-section {
             margin-bottom: var(--space-5);
@@ -1041,22 +1233,40 @@
         .mt-list {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            max-height: 50vh;
+            gap: 8px;
             overflow-y: auto;
+            flex: 1;
+            min-height: 0;
         }
         .mt-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
             align-items: center;
             gap: var(--space-3);
-            padding: var(--space-3);
+            padding: var(--space-3) var(--space-4);
             background: var(--color-bg);
             border: 1px solid var(--color-border);
             border-radius: var(--radius-md);
             transition: all var(--t-fast);
+            position: relative;
         }
         .mt-row:hover { border-color: var(--color-border-strong); box-shadow: var(--shadow-sm); }
         .mt-row[hidden] { display: none; }
+        .mt-row-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .mt-row-icon.bug { background: var(--color-danger-bg); color: var(--color-danger); }
+        .mt-row-icon.story { background: var(--color-success-bg); color: var(--color-success); }
+        .mt-row-icon.task { background: var(--color-primary-bg); color: var(--color-primary); }
+        .mt-row-icon.other { background: var(--color-bg-subtle); color: var(--color-text-muted); }
         .mt-row-key {
             font-weight: 600;
             color: var(--color-primary);
@@ -1066,28 +1276,29 @@
         }
         .mt-row-key:hover { text-decoration: underline; }
         .mt-row-body {
-            flex: 1;
             min-width: 0;
         }
         .mt-row-summary {
             color: var(--color-text);
             font-weight: 500;
-            font-size: 0.88rem;
-            margin-bottom: 2px;
+            font-size: 0.92rem;
+            margin-bottom: 4px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            line-height: 1.3;
         }
         .mt-row-meta {
             display: flex;
             gap: var(--space-2);
-            font-size: 0.75rem;
+            font-size: 0.76rem;
             color: var(--color-text-muted);
             align-items: center;
+            flex-wrap: wrap;
         }
         .mt-row-type {
             font-weight: 500;
-            padding: 1px 6px;
+            padding: 1px 7px;
             border-radius: var(--radius-sm);
             background: var(--color-bg-subtle);
         }
@@ -1095,6 +1306,307 @@
         .mt-row-type.story { background: var(--color-success-bg); color: var(--color-success); }
         .mt-row-type.task { background: var(--color-primary-bg); color: var(--color-primary); }
         .mt-row .btn-sm { flex-shrink: 0; }
+        .mt-row-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .mt-row-status {
+            position: relative;
+        }
+        .mt-status-current {
+            cursor: pointer;
+            padding: 4px 10px 4px 8px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            background: var(--color-bg-subtle);
+            color: var(--color-text-muted);
+            border: 1px solid var(--color-border);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all var(--t-fast);
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .mt-status-current.s-done { background: var(--color-success-bg); color: var(--color-success); border-color: transparent; }
+        .mt-status-current.s-progress { background: var(--color-primary-bg); color: var(--color-primary); border-color: transparent; }
+        .mt-status-current.s-blocked { background: var(--color-danger-bg); color: var(--color-danger); border-color: transparent; }
+        .mt-status-current:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+        .mt-status-current::after {
+            content: '▾';
+            font-size: 0.7em;
+            opacity: 0.7;
+        }
+
+        .mt-popover {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 4px;
+            min-width: 200px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            z-index: 50;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            animation: slideUp 150ms cubic-bezier(0.2, 0, 0, 1);
+        }
+        .mt-popover[hidden] { display: none; }
+        .mt-popover-item {
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.84rem;
+            color: var(--color-text);
+            cursor: pointer;
+            text-align: left;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+            font-weight: 500;
+            transition: background var(--t-fast);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mt-popover-item:hover {
+            background: var(--color-primary-bg);
+            color: var(--color-primary);
+        }
+        .mt-popover-item::before {
+            content: '→';
+            color: var(--color-text-subtle);
+            font-weight: 600;
+        }
+        .mt-popover-item:hover::before { color: var(--color-primary); }
+        .mt-popover-loading, .mt-popover-empty {
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            color: var(--color-text-subtle);
+            text-align: center;
+        }
+
+        .mt-desc-toggle {
+            background: none;
+            border: 1px solid transparent;
+            color: var(--color-text-subtle);
+            cursor: pointer;
+            font-size: 0.85rem;
+            line-height: 1;
+            padding: 0 5px;
+            margin-right: 4px;
+            border-radius: var(--radius-sm);
+            transition: all var(--t-fast);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+        }
+        .mt-desc-toggle:hover {
+            background: var(--color-bg-subtle);
+            color: var(--color-primary);
+            border-color: var(--color-border);
+        }
+        .mt-desc-toggle.expanded {
+            transform: rotate(180deg);
+            color: var(--color-primary);
+        }
+        .mt-row-desc {
+            margin-top: 8px;
+            padding: 10px 12px;
+            background: var(--color-bg-subtle);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--color-border-strong);
+            font-size: 0.82rem;
+            color: var(--color-text-muted);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.55;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+        .mt-row-desc[hidden] { display: none; }
+        .parent-card-desc {
+            margin-top: 8px;
+            padding: 10px 12px;
+            background: var(--color-bg-alt);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--color-border-strong);
+            font-size: 0.82rem;
+            color: var(--color-text-muted);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.55;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .parent-card-desc[hidden] { display: none; }
+
+        .mt-subtasks {
+            margin-top: var(--space-2);
+            padding-left: 24px;
+            border-left: 2px solid var(--color-border);
+            margin-left: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .mt-subtasks[hidden] { display: none; }
+        .mt-subtask {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: var(--space-2);
+            padding: 8px 10px;
+            background: var(--color-bg-alt);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            align-items: center;
+            position: relative;
+        }
+        .mt-subtask:hover { border-color: var(--color-border-strong); }
+        .mt-subtask-icon {
+            font-size: 0.85rem;
+            color: var(--color-text-subtle);
+            width: 18px;
+            text-align: center;
+        }
+        .mt-subtask-body { min-width: 0; }
+        .mt-subtask-summary {
+            font-size: 0.83rem;
+            color: var(--color-text);
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .mt-subtask-meta {
+            display: flex;
+            gap: 6px;
+            font-size: 0.72rem;
+            color: var(--color-text-muted);
+            align-items: center;
+            margin-top: 2px;
+        }
+        .mt-subtask-meta a { color: var(--color-primary); text-decoration: none; font-feature-settings: "tnum"; }
+        .mt-subtask-meta a:hover { text-decoration: underline; }
+        .mt-subtask-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .mt-action-btn {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-muted);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            font-family: inherit;
+            transition: all var(--t-fast);
+            white-space: nowrap;
+        }
+        .mt-action-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            background: var(--color-primary-bg);
+        }
+
+        .mt-row-actions-extra {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        .mt-subtasks-toggle {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-muted);
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: var(--radius-pill);
+            cursor: pointer;
+            font-family: inherit;
+            transition: all var(--t-fast);
+        }
+        .mt-subtasks-toggle:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+        .mt-subtasks-toggle.expanded {
+            background: var(--color-primary-bg);
+            color: var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        /* Modales apilables */
+        #editDescModal.active   { z-index: 1100; }
+        #worklogsModal.active   { z-index: 1100; }
+        #addWorklogModal.active { z-index: 1200; }
+        #subtaskModal.active    { z-index: 1200; }
+        #helpModal.active       { z-index: 1300; }
+
+        .wls-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-right: 4px;
+        }
+        .wls-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: var(--space-3);
+            padding: var(--space-3);
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            align-items: center;
+            transition: border-color var(--t-fast);
+        }
+        .wls-row:hover { border-color: var(--color-border-strong); }
+        .wls-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            font-size: 0.78rem;
+        }
+        .wls-time {
+            font-weight: 700;
+            color: var(--color-primary);
+            font-feature-settings: "tnum";
+            font-size: 0.92rem;
+        }
+        .wls-date {
+            color: var(--color-text-muted);
+            font-feature-settings: "tnum";
+            white-space: nowrap;
+        }
+        .wls-comment {
+            color: var(--color-text);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-width: 0;
+        }
+        .wls-comment.empty {
+            color: var(--color-text-subtle);
+            font-style: italic;
+        }
+        .wls-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
 
         .bug-toggle {
             display: inline-flex;
@@ -1359,6 +1871,35 @@
             transition: all var(--t-fast);
         }
 
+        .editable-duration {
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            padding: 4px 6px;
+            border-bottom: 1px dashed transparent;
+            transition: all var(--t-fast);
+        }
+        .editable-duration:hover {
+            background: var(--color-primary-bg);
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+        .editable-duration.editing {
+            background: var(--color-bg);
+            padding: 0;
+        }
+        .editable-duration input {
+            width: 80px;
+            padding: 4px 6px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-primary);
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-family: inherit;
+            font-size: 0.85rem;
+            outline: none;
+            box-shadow: 0 0 0 3px var(--color-primary-bg);
+        }
+
         .btn-edit-wl { color: var(--color-text-subtle); }
         .btn-edit-wl:hover { color: var(--color-primary); background: var(--color-primary-bg); }
 
@@ -1542,6 +2083,22 @@
         }
         .toast.error .toast-icon { background: var(--color-danger-bg); color: var(--color-danger); }
         .toast.warning .toast-icon { background: var(--color-warning-bg); color: var(--color-warning); }
+        .toast-action {
+            background: none;
+            border: 1px solid var(--color-border);
+            color: var(--color-primary);
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.78rem;
+            font-family: inherit;
+            transition: all var(--t-fast);
+        }
+        .toast-action:hover {
+            background: var(--color-primary-bg);
+            border-color: var(--color-primary);
+        }
 
         @media (max-width: 760px) {
             .container { padding: var(--space-4) var(--space-3); }
@@ -1785,73 +2342,118 @@ function jiraStatusClass(string $status): string {
             </div>
 
             <?php
-            // Heatmap (solo si el rango cubre >=7 días)
-            $_heatmapDays = $report['days'] ?? [];
-            $_showHeatmap = count($_heatmapDays) >= 7;
-            ?>
-            <?php if ($_showHeatmap): ?>
-            <?php
-                // Agrupar días en columnas (semanas) tipo GitHub: L,M,M,J,V,S,D verticalmente
-                $_weeks = [];
-                $_curWeek = array_fill(0, 7, null);
-                $_first = true;
-                foreach ($_heatmapDays as $_hd) {
-                    $_dow = (int) date('N', strtotime($_hd['date'])); // 1=Mon..7=Sun
-                    if ($_first) {
-                        // sembrar la primera semana respetando el día inicial
-                        $_curWeek = array_fill(0, 7, null);
-                        $_first = false;
-                    }
-                    $_curWeek[$_dow - 1] = $_hd;
-                    if ($_dow === 7) {
-                        $_weeks[] = $_curWeek;
-                        $_curWeek = array_fill(0, 7, null);
-                    }
+            // Calendario mensual: muestra el mes que contiene endDate.
+            $_calDays = $report['days'] ?? [];
+            $_showCal = count($_calDays) >= 2;
+            $_dayByDate = [];
+            foreach ($_calDays as $_d) {
+                $_dayByDate[$_d['date']] = $_d;
+            }
+            $_todayStr = $today->format('Y-m-d');
+
+            // Determinar el mes a mostrar (el del endDate)
+            $_calAnchor = new DateTime($endDate, new DateTimeZone($timezone));
+            $_monthFirst = (clone $_calAnchor)->modify('first day of this month');
+            $_monthLast  = (clone $_calAnchor)->modify('last day of this month');
+            $_gridStart  = clone $_monthFirst;
+            $_gridStart->modify('-' . (((int) $_monthFirst->format('N')) - 1) . ' days');
+            $_gridEnd    = clone $_monthLast;
+            $_gridEnd->modify('+' . (7 - (int) $_monthLast->format('N')) . ' days');
+            $_period     = new DatePeriod($_gridStart, new DateInterval('P1D'), (clone $_gridEnd)->modify('+1 day'));
+
+            // Totales del mes
+            $_monthTotal = 0;
+            $_monthExpected = 0;
+            $_daysWithData = 0;
+            $_daysComplete = 0;
+            $_daysMissing = 0;
+            foreach ($_calDays as $_d) {
+                $_dt = new DateTime($_d['date']);
+                if ($_dt < $_monthFirst || $_dt > $_monthLast) continue;
+                $_monthTotal += $_d['totalHours'];
+                if (!$_d['isWeekend']) {
+                    $_monthExpected += $hoursPerDay;
+                    if ($_d['totalHours'] > 0) $_daysWithData++;
+                    if ($_d['totalHours'] >= $hoursPerDay - 0.01) $_daysComplete++;
+                    elseif ($_dt <= $today && $_d['totalHours'] < $hoursPerDay - 0.01) $_daysMissing++;
                 }
-                $_hasIncompleteWeek = false;
-                foreach ($_curWeek as $_c) { if ($_c !== null) { $_hasIncompleteWeek = true; break; } }
-                if ($_hasIncompleteWeek) $_weeks[] = $_curWeek;
+            }
+            $_monthsEs = ['', 'Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+            $_monthName = $_monthsEs[(int)$_calAnchor->format('n')] . ' ' . $_calAnchor->format('Y');
+            $_prevMonth = (clone $_calAnchor)->modify('first day of last month');
+            $_nextMonth = (clone $_calAnchor)->modify('first day of next month');
             ?>
-            <div class="heatmap-section">
-                <div class="heatmap-header">
-                    <span class="heatmap-title">Calendario</span>
-                    <span class="heatmap-legend">
-                        <span style="color: var(--color-text-subtle);">Menos</span>
-                        <span class="heatmap-cell h0"></span>
-                        <span class="heatmap-cell h1"></span>
-                        <span class="heatmap-cell h2"></span>
-                        <span class="heatmap-cell h3"></span>
-                        <span class="heatmap-cell h4"></span>
-                        <span style="color: var(--color-text-subtle);">Más</span>
-                    </span>
+            <?php if ($_showCal): ?>
+            <div class="cal-section collapsed" id="calSection">
+                <div class="cal-header" onclick="toggleCalendar(event)">
+                    <div class="cal-nav">
+                        <button type="button" class="cal-toggle" onclick="event.stopPropagation(); toggleCalendar()" title="Mostrar/ocultar calendario">
+                            <svg class="cal-chevron" width="14" height="14" viewBox="0 0 12 12" fill="currentColor"><path d="M3 4l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                        <a class="cal-nav-btn" href="?range=custom&amp;start=<?= $_prevMonth->format('Y-m-d') ?>&amp;end=<?= (clone $_prevMonth)->modify('last day of this month')->format('Y-m-d') ?>" title="Mes anterior" onclick="event.stopPropagation()">‹</a>
+                        <span class="cal-title"><?= htmlspecialchars($_monthName) ?></span>
+                        <a class="cal-nav-btn" href="?range=custom&amp;start=<?= $_nextMonth->format('Y-m-d') ?>&amp;end=<?= (clone $_nextMonth)->modify('last day of this month')->format('Y-m-d') ?>" title="Mes siguiente" onclick="event.stopPropagation()">›</a>
+                    </div>
+                    <div class="cal-stats">
+                        <span><strong data-hours="<?= round($_monthTotal, 2) ?>"><?= round($_monthTotal, 2) ?>h</strong> de <span data-hours="<?= round($_monthExpected, 2) ?>"><?= round($_monthExpected, 2) ?>h</span></span>
+                        <span class="cal-stats-sep">·</span>
+                        <span><strong><?= $_daysComplete ?></strong> completos</span>
+                        <?php if ($_daysMissing > 0): ?>
+                            <span class="cal-stats-sep">·</span>
+                            <span class="cal-warn"><strong><?= $_daysMissing ?></strong> incompleto<?= $_daysMissing > 1 ? 's' : '' ?></span>
+                        <?php endif; ?>
+                    </div>
                 </div>
-                <div class="heatmap-wrap">
-                    <div class="heatmap-rows-labels">
-                        <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
-                    </div>
-                    <div class="heatmap-grid">
-                    <?php foreach ($_weeks as $_week): ?>
-                        <div class="heatmap-col">
-                            <?php foreach ($_week as $_dayCell): ?>
-                                <?php if ($_dayCell === null): ?>
-                                    <span class="heatmap-cell empty"></span>
-                                <?php else:
-                                    $_h = $_dayCell['totalHours'];
-                                    $_isWk = $_dayCell['isWeekend'];
-                                    $_lvl = 0;
-                                    if ($_h > $hoursPerDay)         $_lvl = 5;
-                                    elseif ($_h >= $hoursPerDay - 0.01) $_lvl = 4;
-                                    elseif ($_h >= $hoursPerDay * 0.6)  $_lvl = 3;
-                                    elseif ($_h >= $hoursPerDay * 0.3)  $_lvl = 2;
-                                    elseif ($_h > 0)                    $_lvl = 1;
-                                    $_title = $_dayCell['dayName'] . ' ' . date('d/m', strtotime($_dayCell['date'])) . ' — ' . $_h . 'h';
-                                ?>
-                                    <span class="heatmap-cell h<?= $_lvl ?> <?= $_isWk ? 'weekend' : '' ?>" title="<?= htmlspecialchars($_title) ?>"></span>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                        </div>
+                <div class="cal-grid">
+                    <div class="cal-dow">L</div><div class="cal-dow">M</div><div class="cal-dow">M</div><div class="cal-dow">J</div><div class="cal-dow">V</div><div class="cal-dow">S</div><div class="cal-dow">D</div>
+                    <?php foreach ($_period as $_dt):
+                        $_dateStr = $_dt->format('Y-m-d');
+                        $_inMonth = ($_dt >= $_monthFirst && $_dt <= $_monthLast);
+                        $_isToday = $_dateStr === $_todayStr;
+                        $_isPast  = $_dt < $today;
+                        $_isFuture = $_dt > $today;
+                        $_isWk    = ((int)$_dt->format('N')) >= 6;
+                        $_data    = $_dayByDate[$_dateStr] ?? null;
+                        $_h       = $_data ? $_data['totalHours'] : null;
+                        $_inRange = $_data !== null;
+
+                        $_cellCls = ['cal-cell'];
+                        if (!$_inMonth) $_cellCls[] = 'out-month';
+                        if ($_isToday)  $_cellCls[] = 'today';
+                        if ($_isWk)     $_cellCls[] = 'weekend';
+                        if (!$_inRange) $_cellCls[] = 'no-data';
+
+                        if ($_inRange && $_h !== null) {
+                            if ($_isWk && $_h == 0) {
+                                /* weekend vacío, no clase de estado */
+                            } elseif ($_h > $hoursPerDay + 0.01) {
+                                $_cellCls[] = 'over';
+                            } elseif ($_h >= $hoursPerDay - 0.01) {
+                                $_cellCls[] = 'complete';
+                            } elseif ($_h > 0) {
+                                $_cellCls[] = 'partial';
+                            } elseif (!$_isWk && $_isPast) {
+                                $_cellCls[] = 'missing';
+                            }
+                        }
+
+                        $_pct = ($_inRange && $_h !== null) ? min(100, ($_h / max(0.01, $hoursPerDay)) * 100) : 0;
+                        $_href = '?range=custom&start=' . $_dateStr . '&end=' . $_dateStr;
+                    ?>
+                    <a class="<?= implode(' ', $_cellCls) ?>"
+                       href="<?= $_href ?>"
+                       title="<?= htmlspecialchars(date('l d/m', strtotime($_dateStr))) ?><?= $_inRange ? ' — ' . $_h . 'h' : '' ?>">
+                        <span class="cal-day-num"><?= (int)$_dt->format('j') ?></span>
+                        <?php if ($_inRange && $_h !== null && $_h > 0): ?>
+                            <span class="cal-day-hours" data-hours="<?= $_h ?>"><?= $_h ?>h</span>
+                        <?php elseif ($_inRange && !$_isWk && $_isPast): ?>
+                            <span class="cal-day-hours muted">—</span>
+                        <?php endif; ?>
+                        <?php if ($_inRange && $_h > 0 && $_pct < 100 && !$_isWk): ?>
+                            <span class="cal-day-bar"><span class="cal-day-bar-fill" style="width: <?= round($_pct) ?>%;"></span></span>
+                        <?php endif; ?>
+                    </a>
                     <?php endforeach; ?>
-                    </div>
                 </div>
             </div>
             <?php endif; ?>
@@ -2117,11 +2719,17 @@ function jiraStatusClass(string $status): string {
                                             <td><?= htmlspecialchars(mb_strimwidth($wl['summary'], 0, 55, '...')) ?></td>
                                             <td><span class="status-tag <?= jiraStatusClass($wl['status']) ?>"><?= htmlspecialchars($wl['status']) ?></span></td>
                                             <td class="mono"><?= $wl['started'] ?></td>
-                                            <td class="mono"><?= htmlspecialchars($wl['timeSpent']) ?></td>
+                                            <td class="mono editable-duration" title="Doble-click para editar"><?= htmlspecialchars($wl['timeSpent']) ?></td>
                                             <td style="white-space:nowrap;">
                                                 <?php if ($wl['id']): ?>
                                                 <button class="btn-edit-wl"
-                                                        onclick="openEditWorklog(event,'<?= htmlspecialchars($wl['issueKey']) ?>','<?= htmlspecialchars($wl['id']) ?>','<?= $day['date'] ?>','<?= $wl['started'] ?>','<?= htmlspecialchars($wl['timeSpent']) ?>')"
+                                                        data-issuekey="<?= htmlspecialchars($wl['issueKey']) ?>"
+                                                        data-worklogid="<?= htmlspecialchars($wl['id']) ?>"
+                                                        data-date="<?= $day['date'] ?>"
+                                                        data-time="<?= $wl['started'] ?>"
+                                                        data-duration="<?= htmlspecialchars($wl['timeSpent']) ?>"
+                                                        data-comment="<?= htmlspecialchars($wl['comment'] ?? '') ?>"
+                                                        onclick="openEditWorklogFromBtn(event, this)"
                                                         title="Editar">&#9998;</button>
                                                 <button class="btn-del-wl"
                                                         onclick="deleteWorklog(event,'<?= htmlspecialchars($wl['issueKey']) ?>','<?= htmlspecialchars($wl['id']) ?>','<?= htmlspecialchars($wl['timeSpent']) ?>')"
@@ -2238,6 +2846,18 @@ function jiraStatusClass(string $status): string {
                 <button type="button" class="chip chip-rest" id="wl-chip-rest">Resto del día</button>
             </div>
         </div>
+        <div class="field">
+            <label for="wl-comment">Descripción <span style="color:var(--color-text-subtle);font-weight:normal;">(opcional)</span></label>
+            <textarea id="wl-comment" rows="2" placeholder="¿Qué hiciste en este tiempo? (queda como comentario del worklog)"
+                      style="width:100%; padding:8px 10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); font-size:0.88rem; font-family:inherit; color:var(--color-text); background:var(--color-bg); resize:vertical;"></textarea>
+        </div>
+        <div class="field" id="wl-transition-field" hidden>
+            <label for="wl-transition">Cambiar estado de la tarea <span style="color:var(--color-text-subtle);font-weight:normal;">(opcional)</span></label>
+            <select id="wl-transition" class="select-filter" style="width:100%; max-width:none;">
+                <option value="">— Mantener estado actual —</option>
+            </select>
+            <div class="field-hint" id="wl-transition-hint" hidden></div>
+        </div>
         <div id="wl-error" class="form-error" hidden></div>
         <div class="dialog-footer">
             <span class="kbd-hint">⌘ Enter para guardar</span>
@@ -2327,18 +2947,70 @@ function jiraStatusClass(string $status): string {
     </div>
 </div>
 
-<div class="overlay" id="myTasksModal">
-    <div class="dialog" style="max-width: 640px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4);gap:var(--space-3);">
-            <h2 style="margin-bottom:0;">Mis tareas asignadas</h2>
-            <div style="display:flex;align-items:center;gap:var(--space-2);">
-                <label class="bug-toggle"><input type="checkbox" id="mt-only-bugs"> Solo bugs</label>
-                <button onclick="closeMyTasks()" class="dialog-close" aria-label="Cerrar">&times;</button>
-            </div>
+<div class="overlay" id="worklogsModal">
+    <div class="dialog" style="max-width: 720px; max-height: 92vh; display:flex; flex-direction:column;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+            <h2 style="margin-bottom:0;">Tiempo registrado <span id="wls-total" class="filter-count" style="font-weight:400;font-size:0.78rem;"></span></h2>
+            <button onclick="closeWorklogsList()" class="dialog-close" aria-label="Cerrar">&times;</button>
         </div>
-        <div class="filterbar-search" style="margin-bottom: var(--space-3);">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="search" id="mt-search" placeholder="Filtrar por clave o título…" autocomplete="off">
+        <div class="field">
+            <div id="wls-issue" class="parent-card"></div>
+        </div>
+        <div id="wls-list" class="wls-list" style="flex:1; min-height:0; overflow-y:auto;">
+            <div class="no-data"><span class="spinner"></span> Cargando…</div>
+        </div>
+        <div class="dialog-footer">
+            <div style="flex:1"></div>
+            <button class="btn-sm" onclick="closeWorklogsList()">Cerrar</button>
+            <button class="btn-sm primary" onclick="newWorklogFromList()">+ Registrar tiempo</button>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="editDescModal">
+    <div class="dialog" style="max-width: 600px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4);">
+            <h2 style="margin-bottom:0;">Editar descripción</h2>
+            <button onclick="closeEditDesc()" class="dialog-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="field">
+            <label>Tarea</label>
+            <div id="ed-issue" class="parent-card"></div>
+        </div>
+        <div class="field">
+            <label for="ed-text">Descripción</label>
+            <textarea id="ed-text" rows="10"
+                      placeholder="Descripción de la tarea…"
+                      style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--color-border); font-size:0.88rem; font-family:inherit; color:var(--color-text); background:var(--color-bg); resize:vertical; min-height:160px;"></textarea>
+            <div id="ed-loading" class="field-hint" hidden><span class="spinner" style="margin-right:6px;"></span>Cargando descripción actual…</div>
+        </div>
+        <div id="ed-error" class="form-error" hidden></div>
+        <div class="dialog-footer">
+            <span class="kbd-hint">⌘ Enter para guardar</span>
+            <div style="flex:1"></div>
+            <button class="btn-sm" onclick="closeEditDesc()">Cancelar</button>
+            <button class="btn-sm primary" id="ed-submit" onclick="submitEditDesc()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="myTasksModal">
+    <div class="dialog" style="max-width: 920px; max-height: 92vh; display:flex; flex-direction:column;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+            <h2 style="margin-bottom:0;">Mis tareas asignadas <span id="mt-count" class="filter-count" style="font-weight:400;font-size:0.78rem;"></span></h2>
+            <button onclick="closeMyTasks()" class="dialog-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <div style="display:flex; gap: var(--space-2); margin-bottom: var(--space-3); flex-wrap:wrap;">
+            <div class="filterbar-search" style="flex:1; min-width:180px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="search" id="mt-search" placeholder="Filtrar por clave o título…" autocomplete="off">
+            </div>
+            <select id="mt-filter-type" class="select-filter">
+                <option value="">Todos los tipos</option>
+            </select>
+            <select id="mt-filter-status" class="select-filter">
+                <option value="">Todos los estados</option>
+            </select>
         </div>
         <div id="mt-list" class="mt-list">
             <div class="no-data"><span class="spinner"></span> Cargando…</div>
@@ -2355,6 +3027,7 @@ function jiraStatusClass(string $status): string {
         <div class="field">
             <label>Tarea padre</label>
             <div id="st-parent" class="parent-card"></div>
+            <div id="st-parent-desc" class="parent-card-desc" hidden></div>
         </div>
         <div class="field">
             <label for="st-summary">Título</label>
@@ -2407,19 +3080,35 @@ function jiraStatusClassJs(status) {
     return '';
 }
 
-function toast(message, type) {
+function toast(message, type, options) {
+    options = options || {};
     type = type || 'success';
     var container = document.getElementById('toastContainer');
     if (!container) return;
     var el = document.createElement('div');
     el.className = 'toast' + (type !== 'success' ? ' ' + type : '');
     var icon = type === 'error' ? '!' : (type === 'warning' ? '!' : '✓');
-    el.innerHTML = '<span class="toast-icon">' + icon + '</span><span>' + (message || '') + '</span>';
+    var actionHtml = '';
+    var actionId = '';
+    if (options.actionLabel && typeof options.onAction === 'function') {
+        actionId = 'toast-act-' + Math.random().toString(36).slice(2, 8);
+        actionHtml = '<button class="toast-action" id="' + actionId + '">' + options.actionLabel + '</button>';
+    }
+    el.innerHTML = '<span class="toast-icon">' + icon + '</span>' +
+                   '<span style="flex:1;">' + (message || '') + '</span>' + actionHtml;
     container.appendChild(el);
-    setTimeout(function() {
+    var done = false;
+    function close() {
+        if (done) return; done = true;
         el.classList.add('removing');
         setTimeout(function() { el.remove(); }, 220);
-    }, 3500);
+    }
+    if (actionId) {
+        document.getElementById(actionId).addEventListener('click', function() {
+            try { options.onAction(); } finally { close(); }
+        });
+    }
+    setTimeout(close, options.duration || 3500);
 }
 
 function setBtnLoading(btn, loading, originalText) {
@@ -2584,7 +3273,7 @@ function setBtnLoading(btn, loading, originalText) {
         return total;
     }
 
-    function openWorklogModal(mode, issueKey, worklogId, date, time, duration) {
+    function openWorklogModal(mode, issueKey, worklogId, date, time, duration, comment) {
         document.getElementById('wl-mode').value = mode;
         document.getElementById('wl-worklog-id').value = worklogId || '';
         var keyInput = document.getElementById('wl-key');
@@ -2600,11 +3289,19 @@ function setBtnLoading(btn, loading, originalText) {
         }
         document.getElementById('wl-time').value = time || '09:00';
         document.getElementById('wl-duration').value = duration || '';
+        document.getElementById('wl-comment').value = comment || '';
+        document.getElementById('wl-transition').value = '';
+        document.getElementById('wl-transition-field').hidden = true;
 
         hideWlError();
         hideSuggestions();
         hideKeyHint();
         clearChipActive();
+
+        // Si ya hay key, cargar las transiciones disponibles.
+        if (issueKey) {
+            loadTransitionsForKey(issueKey);
+        }
 
         document.getElementById('wl-title').textContent = (mode === 'edit') ? 'Editar registro' : 'Registrar tiempo';
         var btn = document.getElementById('wl-submit');
@@ -2622,9 +3319,21 @@ function setBtnLoading(btn, loading, originalText) {
         openWorklogModal('add', '', '', date, '', '');
     };
 
-    window.openEditWorklog = function(e, issueKey, worklogId, date, time, duration) {
+    window.openEditWorklog = function(e, issueKey, worklogId, date, time, duration, comment) {
         e.stopPropagation();
-        openWorklogModal('edit', issueKey, worklogId, date, time, duration);
+        openWorklogModal('edit', issueKey, worklogId, date, time, duration, comment);
+    };
+
+    window.openEditWorklogFromBtn = function(e, btn) {
+        e.stopPropagation();
+        openWorklogModal('edit',
+            btn.dataset.issuekey,
+            btn.dataset.worklogid,
+            btn.dataset.date,
+            btn.dataset.time,
+            btn.dataset.duration,
+            btn.dataset.comment || ''
+        );
     };
 
     window.closeAddWorklog = function() {
@@ -2682,7 +3391,7 @@ function setBtnLoading(btn, loading, originalText) {
         return Math.round(s / 3600 * 100) / 100;
     }
 
-    function updateWorklogInDOM(worklogId, newTime, durationStr) {
+    function updateWorklogInDOM(worklogId, newTime, durationStr, newComment) {
         var row = document.querySelector('tr[data-wl-id="' + worklogId + '"]');
         if (!row) return false;
 
@@ -2691,6 +3400,16 @@ function setBtnLoading(btn, loading, originalText) {
         var cells = row.querySelectorAll('td');
         cells[4].textContent = newTime;
         cells[5].textContent = fmtTimeSpent(newSec);
+
+        // Actualizar el data del botón de editar para que el próximo edit muestre el comment correcto
+        var editBtn = row.querySelector('.btn-edit-wl');
+        if (editBtn) {
+            editBtn.dataset.time = newTime;
+            editBtn.dataset.duration = durationStr;
+            if (typeof newComment === 'string') {
+                editBtn.dataset.comment = newComment;
+            }
+        }
 
         // Recalcular total del día
         var dayContent = row.closest('.day-content');
@@ -2747,26 +3466,30 @@ function setBtnLoading(btn, loading, originalText) {
         }
 
         var issueKey  = data.issueKey || '';
-        var editArgs  = [
-            "'" + issueKey + "'",
-            "'" + (data.worklogId || '') + "'",
-            "'" + date + "'",
-            "'" + time + "'",
-            "'" + durationStr.replace(/'/g, "\\'") + "'"
-        ].join(',');
 
         var tr = document.createElement('tr');
         tr.dataset.wlId      = data.worklogId || '';
         tr.dataset.wlSeconds = newSec;
         var statusCls = jiraStatusClassJs(data.status || '');
+        var editBtn = '';
+        if (data.worklogId) {
+            editBtn = '<button class="btn-edit-wl"' +
+                ' data-issuekey="' + escAttr(issueKey) + '"' +
+                ' data-worklogid="' + escAttr(data.worklogId) + '"' +
+                ' data-date="' + escAttr(date) + '"' +
+                ' data-time="' + escAttr(time) + '"' +
+                ' data-duration="' + escAttr(durationStr) + '"' +
+                ' data-comment="' + escAttr(data.comment || '') + '"' +
+                ' onclick="openEditWorklogFromBtn(event, this)" title="Editar">&#9998;</button>';
+        }
         tr.innerHTML =
             '<td><a class="key-link" href="' + JIRA_BASE_URL + '/browse/' + issueKey + '" target="_blank">' + issueKey + '</a></td>' +
             '<td>' + (data.project || '') + '</td>' +
             '<td>' + truncate(data.summary || '', 55) + '</td>' +
             '<td><span class="status-tag ' + statusCls + '">' + (data.status || '') + '</span></td>' +
             '<td class="mono">' + time + '</td>' +
-            '<td class="mono">' + fmtTimeSpent(newSec) + '</td>' +
-            '<td>' + (data.worklogId ? '<button class="btn-edit-wl" onclick="openEditWorklog(event,' + editArgs + ')" title="Editar">&#9998;</button>' : '') + '</td>';
+            '<td class="mono editable-duration" title="Doble-click para editar">' + fmtTimeSpent(newSec) + '</td>' +
+            '<td>' + editBtn + '</td>';
 
         // Insertar en orden por hora
         var rows = tbody.querySelectorAll('tr');
@@ -2813,7 +3536,22 @@ function setBtnLoading(btn, loading, originalText) {
         var btn = document.getElementById('wl-submit');
         setBtnLoading(btn, true, mode === 'edit' ? 'Guardando…' : 'Registrando…');
 
-        var payload = { issueKey: key, date: date, time: time, duration: duration };
+        var comment = document.getElementById('wl-comment').value.trim();
+        var transitionId = document.getElementById('wl-transition').value;
+        var transitionLabel = '';
+        if (transitionId) {
+            var sel = document.getElementById('wl-transition');
+            transitionLabel = (sel.options[sel.selectedIndex].textContent || '').replace(/^→\s*/, '');
+        }
+
+        var payload = {
+            issueKey: key,
+            date: date,
+            time: time,
+            duration: duration,
+            comment: comment,
+            transitionId: transitionId
+        };
         if (mode === 'edit') {
             payload.action    = 'update_worklog';
             payload.worklogId = document.getElementById('wl-worklog-id').value;
@@ -2831,12 +3569,25 @@ function setBtnLoading(btn, loading, originalText) {
             if (data.ok) {
                 closeAddWorklog();
                 if (mode === 'edit') {
-                    updateWorklogInDOM(payload.worklogId, time, duration);
-                    toast(duration + ' actualizado en ' + key, 'success');
+                    // Pasar el comment editado para que se cargue al próximo edit (si lo escribió)
+                    updateWorklogInDOM(payload.worklogId, time, duration, comment);
+                    var msg = duration + ' actualizado en ' + key;
+                    if (data.transition && data.transition.ok && transitionLabel) msg += ' · ' + transitionLabel;
+                    toast(msg, 'success');
                 } else {
                     data.issueKey = key;
+                    data.comment = comment;
                     insertWorklogInDOM(data, date, time, duration);
-                    toast(duration + ' registrado en ' + key, 'success');
+                    var msg = duration + ' registrado en ' + key;
+                    if (data.transition && data.transition.ok && transitionLabel) msg += ' · ' + transitionLabel;
+                    toast(msg, 'success');
+                }
+                if (data.transition && data.transition.ok === false) {
+                    toast('No se pudo cambiar el estado: ' + (data.transition.error || ''), 'warning');
+                }
+                // Si el modal "Tiempo registrado" está abierto para esta misma issue, refrescar
+                if (currentWorklogsKey && currentWorklogsKey === key) {
+                    refreshWorklogsList();
                 }
             } else {
                 showWlError(data.error || 'Error desconocido');
@@ -2848,6 +3599,34 @@ function setBtnLoading(btn, loading, originalText) {
             setBtnLoading(btn, false);
         });
     };
+
+    function undoDeleteWorklog(snapshot) {
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'add_worklog',
+                issueKey: snapshot.issueKey,
+                date: snapshot.date,
+                time: snapshot.time,
+                duration: snapshot.timeSpent
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) throw new Error(data.error || 'Error');
+            data.issueKey = snapshot.issueKey;
+            // Si el server no devolvió summary/project/status, usar los del snapshot
+            if (!data.summary) data.summary = snapshot.summary;
+            if (!data.project) data.project = snapshot.project;
+            if (!data.status)  data.status  = snapshot.status;
+            insertWorklogInDOM(data, snapshot.date, snapshot.time, snapshot.timeSpent);
+            toast('Restaurado en ' + snapshot.issueKey, 'success');
+        })
+        .catch(function(err) {
+            toast('No se pudo restaurar: ' + err.message, 'error');
+        });
+    }
 
     window.deleteWorklog = function(e, issueKey, worklogId, timeSpent) {
         e.stopPropagation();
@@ -2861,6 +3640,21 @@ function setBtnLoading(btn, loading, originalText) {
 
         var row = document.querySelector('tr[data-wl-id="' + worklogId + '"]');
 
+        // Snapshot para deshacer
+        var snapshot = null;
+        if (row) {
+            var cells = row.querySelectorAll('td');
+            snapshot = {
+                issueKey: issueKey,
+                summary: cells[2] ? cells[2].textContent.trim() : '',
+                project: cells[1] ? cells[1].textContent.trim() : '',
+                status:  cells[3] ? cells[3].textContent.trim() : '',
+                time:    cells[4] ? cells[4].textContent.trim() : '09:00',
+                date:    row.closest('.day') ? row.closest('.day').dataset.date : '',
+                timeSpent: timeSpent
+            };
+        }
+
         fetch(location.pathname + location.search, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2869,7 +3663,11 @@ function setBtnLoading(btn, loading, originalText) {
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.ok) {
-                toast(timeSpent + ' eliminado de ' + issueKey, 'success');
+                toast(timeSpent + ' eliminado de ' + issueKey, 'success', snapshot ? {
+                    actionLabel: 'Deshacer',
+                    duration: 6000,
+                    onAction: function() { undoDeleteWorklog(snapshot); }
+                } : {});
                 if (!row) return;
                 var oldSec     = parseInt(row.dataset.wlSeconds || 0);
                 var dayContent = row.closest('.day-content');
@@ -3033,7 +3831,58 @@ function setBtnLoading(btn, loading, originalText) {
         document.getElementById('wl-key').value = key;
         showKeyHint('<strong>' + escHtml(summary) + '</strong>' + (project ? ' · ' + escHtml(project) : ''));
         hideSuggestions();
+        loadTransitionsForKey(key);
         document.getElementById('wl-duration').focus();
+    }
+
+    /* Cargar transiciones disponibles para una issue */
+    var transitionAbort = null;
+    function loadTransitionsForKey(key) {
+        if (transitionAbort) try { transitionAbort.abort(); } catch(e) {}
+        var field = document.getElementById('wl-transition-field');
+        var sel = document.getElementById('wl-transition');
+        var hint = document.getElementById('wl-transition-hint');
+
+        if (!key || !/^[A-Z][A-Z0-9_]*-\d+$/.test(key)) {
+            field.hidden = true;
+            sel.innerHTML = '<option value="">— Mantener estado actual —</option>';
+            return;
+        }
+
+        sel.innerHTML = '<option value="">Cargando estados…</option>';
+        sel.disabled = true;
+        field.hidden = false;
+        hint.hidden = true;
+
+        transitionAbort = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var opts = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'get_transitions', issueKey: key })
+        };
+        if (transitionAbort) opts.signal = transitionAbort.signal;
+
+        fetch(location.pathname + location.search, opts)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                sel.disabled = false;
+                if (!data.ok || !Array.isArray(data.transitions) || data.transitions.length === 0) {
+                    field.hidden = true;
+                    sel.innerHTML = '<option value="">— Mantener estado actual —</option>';
+                    hint.textContent = data.error ? 'No se pudieron cargar los estados disponibles.' : '';
+                    hint.hidden = !data.error;
+                    return;
+                }
+                sel.innerHTML = '<option value="">— Mantener estado actual —</option>' +
+                    data.transitions.map(function(t) {
+                        return '<option value="' + escAttr(t.id) + '">→ ' + escHtml(t.toName || t.name) + '</option>';
+                    }).join('');
+            })
+            .catch(function(err) {
+                if (err && err.name === 'AbortError') return;
+                sel.disabled = false;
+                field.hidden = true;
+            });
     }
 
     function escHtml(s) {
@@ -3044,6 +3893,25 @@ function setBtnLoading(btn, loading, originalText) {
     function escAttr(s) { return escHtml(s); }
 
     /* ===== Filtros y búsqueda ===== */
+    function syncFiltersToUrl() {
+        try {
+            var params = new URLSearchParams(location.search);
+            var pairs = {
+                q: (document.getElementById('search-input') || {}).value || '',
+                p: (document.getElementById('filter-project') || {}).value || '',
+                i: (document.getElementById('filter-initiative') || {}).value || '',
+                s: (document.getElementById('filter-status') || {}).value || ''
+            };
+            for (var k in pairs) {
+                if (pairs[k]) params.set(k, pairs[k]);
+                else params.delete(k);
+            }
+            var qs = params.toString();
+            var newUrl = location.pathname + (qs ? '?' + qs : '');
+            history.replaceState(null, '', newUrl);
+        } catch (e) {}
+    }
+
     function applyFilters() {
         var search = (document.getElementById('search-input').value || '').trim().toLowerCase();
         var project = document.getElementById('filter-project').value;
@@ -3102,7 +3970,25 @@ function setBtnLoading(btn, loading, originalText) {
         } else {
             countEl.hidden = true;
         }
+
+        syncFiltersToUrl();
     }
+
+    /* Aplicar filtros desde URL al cargar */
+    (function() {
+        try {
+            var params = new URLSearchParams(location.search);
+            var q = params.get('q'),  p = params.get('p'),
+                i = params.get('i'),  s = params.get('s');
+            if (q || p || i || s) {
+                if (q) document.getElementById('search-input').value     = q;
+                if (p) document.getElementById('filter-project').value    = p;
+                if (i) document.getElementById('filter-initiative').value = i;
+                if (s) document.getElementById('filter-status').value     = s;
+                applyFilters();
+            }
+        } catch (e) {}
+    })();
 
     window.clearFilters = function() {
         document.getElementById('search-input').value = '';
@@ -3148,16 +4034,28 @@ function setBtnLoading(btn, loading, originalText) {
 
     /* ===== Listeners del modal de worklog ===== */
     var keyInput = document.getElementById('wl-key');
+    var transitionTimer = null;
     if (keyInput) {
         keyInput.addEventListener('input', function() {
             hideKeyHint();
             clearTimeout(pickTimer);
-            var q = this.value.trim();
+            clearTimeout(transitionTimer);
+            var q = this.value.trim().toUpperCase();
             pickTimer = setTimeout(function() { fetchSuggestions(q); }, 250);
+            // Si parece clave válida, cargar transitions tras pausa
+            if (/^[A-Z][A-Z0-9_]*-\d+$/.test(q)) {
+                transitionTimer = setTimeout(function() { loadTransitionsForKey(q); }, 600);
+            } else {
+                document.getElementById('wl-transition-field').hidden = true;
+            }
         });
         keyInput.addEventListener('blur', function() {
             // Pequeño delay para permitir click en sugerencia.
             setTimeout(hideSuggestions, 180);
+            var q = this.value.trim().toUpperCase();
+            if (/^[A-Z][A-Z0-9_]*-\d+$/.test(q)) {
+                loadTransitionsForKey(q);
+            }
         });
         keyInput.addEventListener('keydown', function(e) {
             var box = document.getElementById('wl-suggestions');
@@ -3214,6 +4112,24 @@ function setBtnLoading(btn, loading, originalText) {
             }
         });
     }
+
+    /* ===== Calendario expandible (persistente) ===== */
+    window.toggleCalendar = function(e) {
+        if (e && e.target.closest('a')) return; // no togglear si clickeaste un link
+        var sec = document.getElementById('calSection');
+        if (!sec) return;
+        sec.classList.toggle('collapsed');
+        var expanded = !sec.classList.contains('collapsed');
+        try { localStorage.setItem('jb_cal_expanded', expanded ? '1' : '0'); } catch(e2) {}
+    };
+    (function() {
+        var sec = document.getElementById('calSection');
+        if (!sec) return;
+        var saved = null;
+        try { saved = localStorage.getItem('jb_cal_expanded'); } catch(e) {}
+        if (saved === '1') sec.classList.remove('collapsed');
+        else sec.classList.add('collapsed');
+    })();
 
     /* ===== Comparativa async (fetch después del render) ===== */
     (function() {
@@ -3325,23 +4241,53 @@ function setBtnLoading(btn, loading, originalText) {
         .then(function(data) {
             if (!data.ok) throw new Error(data.error || 'Error');
             myTasksData = data.issues || [];
+            console.log('[my-tasks] received', myTasksData.length, 'issues:', myTasksData);
+            populateTypeFilters();
             renderMyTasks();
         })
         .catch(function(err) {
-            listEl.innerHTML = '<div class="no-data" style="color:var(--color-danger);">Error: ' + escHtml(err.message) + '</div>';
+            listEl.innerHTML = '<div class="no-data" style="color:var(--color-danger); padding:var(--space-5);">' +
+                '<div>Error al cargar: ' + escHtml(err.message) + '</div>' +
+                '<div style="margin-top:8px; font-size:0.78rem;">Revisa la consola para más detalles.</div>' +
+            '</div>';
+            console.error('[my-tasks]', err);
         });
     };
     window.closeMyTasks = function() {
         document.getElementById('myTasksModal').classList.remove('active');
     };
 
+    function populateTypeFilters() {
+        var typeSel = document.getElementById('mt-filter-type');
+        var statusSel = document.getElementById('mt-filter-status');
+        var typeCounts = {}, statusCounts = {};
+        myTasksData.forEach(function(iss) {
+            var t = iss.issuetype || '?';
+            var s = iss.status || '?';
+            typeCounts[t] = (typeCounts[t] || 0) + 1;
+            statusCounts[s] = (statusCounts[s] || 0) + 1;
+        });
+        var typesSorted = Object.keys(typeCounts).sort();
+        typeSel.innerHTML = '<option value="">Todos los tipos (' + myTasksData.length + ')</option>' +
+            typesSorted.map(function(t) {
+                return '<option value="' + escAttr(t) + '">' + escHtml(t) + ' (' + typeCounts[t] + ')</option>';
+            }).join('');
+        var statusesSorted = Object.keys(statusCounts).sort();
+        statusSel.innerHTML = '<option value="">Todos los estados</option>' +
+            statusesSorted.map(function(s) {
+                return '<option value="' + escAttr(s) + '">' + escHtml(s) + ' (' + statusCounts[s] + ')</option>';
+            }).join('');
+    }
+
     function renderMyTasks() {
         var listEl = document.getElementById('mt-list');
-        var onlyBugs = document.getElementById('mt-only-bugs').checked;
+        var typeF = document.getElementById('mt-filter-type').value;
+        var statusF = document.getElementById('mt-filter-status').value;
         var filter = (document.getElementById('mt-search').value || '').toLowerCase();
 
         var filtered = myTasksData.filter(function(iss) {
-            if (onlyBugs && !/bug|defect|error/i.test(iss.issuetype || '')) return false;
+            if (typeF && (iss.issuetype || '') !== typeF) return false;
+            if (statusF && (iss.status || '') !== statusF) return false;
             if (filter) {
                 var hay = (iss.key + ' ' + iss.summary + ' ' + iss.project).toLowerCase();
                 if (hay.indexOf(filter) === -1) return false;
@@ -3349,47 +4295,488 @@ function setBtnLoading(btn, loading, originalText) {
             return true;
         });
 
+        document.getElementById('mt-count').textContent =
+            filtered.length === myTasksData.length
+                ? '· ' + myTasksData.length + ' total'
+                : '· ' + filtered.length + ' / ' + myTasksData.length;
+
         if (filtered.length === 0) {
-            listEl.innerHTML = '<div class="no-data">Sin resultados</div>';
+            if (myTasksData.length === 0) {
+                listEl.innerHTML = '<div class="no-data" style="padding:var(--space-6);">' +
+                    '<div style="font-size:1.1rem; margin-bottom:6px;">📭 Sin tareas asignadas</div>' +
+                    '<div style="font-size:0.82rem;">No tienes issues asignadas con estado distinto a "Done"</div>' +
+                '</div>';
+            } else {
+                listEl.innerHTML = '<div class="no-data">Sin coincidencias para los filtros aplicados</div>';
+            }
             return;
         }
 
         listEl.innerHTML = filtered.map(function(iss) {
-            var typeCls = '';
-            var type = (iss.issuetype || '').toLowerCase();
-            if (/bug|defect|error/.test(type)) typeCls = 'bug';
-            else if (/story|hist/.test(type))  typeCls = 'story';
-            else if (/task|tarea/.test(type)) typeCls = 'task';
+            var typeCls = 'other';
+            var typeLow = (iss.issuetype || '').toLowerCase();
+            var typeIcon = '?';
+            if (/bug|defect|error|defecto|incidencia|fallo|problem/.test(typeLow)) { typeCls = 'bug'; typeIcon = '🐞'; }
+            else if (/story|hist/.test(typeLow)) { typeCls = 'story'; typeIcon = '📖'; }
+            else if (/task|tarea|sub/.test(typeLow)) { typeCls = 'task'; typeIcon = '✓'; }
+            else { typeIcon = '◆'; }
 
-            return '<div class="mt-row">' +
-                '<div class="mt-row-body">' +
-                    '<div class="mt-row-summary">' + escHtml(iss.summary) + '</div>' +
-                    '<div class="mt-row-meta">' +
-                        '<a class="mt-row-key" href="' + JIRA_BASE_URL + '/browse/' + escHtml(iss.key) + '" target="_blank">' + escHtml(iss.key) + '</a> · ' +
-                        '<span class="mt-row-type ' + typeCls + '">' + escHtml(iss.issuetype || '?') + '</span> · ' +
-                        '<span>' + escHtml(iss.project) + '</span> · ' +
-                        '<span class="status-tag ' + jiraStatusClassJs(iss.status) + '">' + escHtml(iss.status) + '</span>' +
+            var statusCls = jiraStatusClassJs(iss.status);
+            var hasDesc = (iss.description || '').trim().length > 0;
+            var descToggle = hasDesc
+                ? '<button class="mt-desc-toggle" data-action="toggle-desc" type="button" title="Ver descripción">▾</button>'
+                : '';
+            var descBlock = hasDesc
+                ? '<div class="mt-row-desc" hidden>' + escHtml(iss.description).replace(/\n/g, '<br>') + '</div>'
+                : '';
+
+            var subtasksCount = (iss.subtasks || []).length;
+            var subtasksHtml = '';
+            if (subtasksCount > 0) {
+                subtasksHtml = '<div class="mt-subtasks" hidden>' +
+                    iss.subtasks.map(function(st) {
+                        var stType = (st.issuetype || '').toLowerCase();
+                        var stIcon = '✓';
+                        if (/bug|defect|error|defecto/.test(stType)) stIcon = '🐞';
+                        var stStatusCls = jiraStatusClassJs(st.status);
+                        return '<div class="mt-subtask" data-key="' + escAttr(st.key) + '">' +
+                            '<div class="mt-subtask-icon">' + stIcon + '</div>' +
+                            '<div class="mt-subtask-body">' +
+                                '<div class="mt-subtask-summary">' + escHtml(st.summary) + '</div>' +
+                                '<div class="mt-subtask-meta">' +
+                                    '<a href="' + JIRA_BASE_URL + '/browse/' + escHtml(st.key) + '" target="_blank">' + escHtml(st.key) + '</a>' +
+                                    '<span style="color:var(--color-border);">·</span>' +
+                                    '<span>' + escHtml(st.issuetype || 'Sub-task') + '</span>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="mt-row-status">' +
+                                '<button class="mt-status-current ' + stStatusCls + '" data-key="' + escAttr(st.key) + '" data-action="open-status">' +
+                                    escHtml(st.status) +
+                                '</button>' +
+                                '<div class="mt-popover" hidden></div>' +
+                            '</div>' +
+                            '<div class="mt-subtask-actions">' +
+                                '<button class="mt-action-btn" data-action="quick-worklog" data-key="' + escAttr(st.key) + '" title="Registrar tiempo">⏱ Tiempo</button>' +
+                                '<button class="mt-action-btn" data-action="edit-desc" data-key="' + escAttr(st.key) + '" data-summary="' + escAttr(st.summary) + '" title="Editar descripción">✎ Desc</button>' +
+                            '</div>' +
+                        '</div>';
+                    }).join('') +
+                '</div>';
+            }
+
+            var subToggle = subtasksCount > 0
+                ? '<button class="mt-subtasks-toggle" data-action="toggle-subtasks" type="button">▾ ' + subtasksCount + ' subtarea' + (subtasksCount > 1 ? 's' : '') + '</button>'
+                : '';
+
+            return '<div class="mt-row-wrap" data-key="' + escAttr(iss.key) + '">' +
+                '<div class="mt-row" data-key="' + escAttr(iss.key) + '">' +
+                    '<div class="mt-row-icon ' + typeCls + '">' + typeIcon + '</div>' +
+                    '<div class="mt-row-body">' +
+                        '<div class="mt-row-summary">' + descToggle + '<span>' + escHtml(iss.summary) + '</span></div>' +
+                        '<div class="mt-row-meta">' +
+                            '<a class="mt-row-key" href="' + JIRA_BASE_URL + '/browse/' + escHtml(iss.key) + '" target="_blank">' + escHtml(iss.key) + '</a>' +
+                            '<span style="color:var(--color-border);">·</span>' +
+                            '<span class="mt-row-type ' + typeCls + '">' + escHtml(iss.issuetype || '?') + '</span>' +
+                            '<span style="color:var(--color-border);">·</span>' +
+                            '<span>' + escHtml(iss.project) + '</span>' +
+                            (subToggle ? '<span style="color:var(--color-border);">·</span>' + subToggle : '') +
+                        '</div>' +
+                        descBlock +
+                    '</div>' +
+                    '<div class="mt-row-status">' +
+                        '<button class="mt-status-current ' + statusCls + '" data-key="' + escAttr(iss.key) + '" data-action="open-status">' +
+                            escHtml(iss.status) +
+                        '</button>' +
+                        '<div class="mt-popover" hidden></div>' +
+                    '</div>' +
+                    '<div class="mt-row-actions">' +
+                        '<button class="mt-action-btn" data-action="quick-worklog" data-key="' + escAttr(iss.key) + '" title="Registrar tiempo">⏱</button>' +
+                        '<button class="mt-action-btn" data-action="edit-desc" data-key="' + escAttr(iss.key) + '" data-summary="' + escAttr(iss.summary) + '" title="Editar descripción">✎</button>' +
+                        '<button class="btn-sm primary" data-action="add-subtask" data-key="' + escAttr(iss.key) + '" data-summary="' + escAttr(iss.summary) + '" data-description="' + escAttr(iss.description || '') + '">+ Subtarea</button>' +
                     '</div>' +
                 '</div>' +
-                '<button class="btn-sm primary" data-key="' + escAttr(iss.key) + '" data-summary="' + escAttr(iss.summary) + '">+ Subtarea</button>' +
+                subtasksHtml +
             '</div>';
         }).join('');
 
-        // Bind
-        Array.prototype.forEach.call(listEl.querySelectorAll('.btn-sm[data-key]'), function(btn) {
+        Array.prototype.forEach.call(listEl.querySelectorAll('[data-action="add-subtask"]'), function(btn) {
             btn.addEventListener('click', function() {
-                openSubtask(btn.dataset.key, btn.dataset.summary);
+                openSubtask(btn.dataset.key, btn.dataset.summary, btn.dataset.description);
+            });
+        });
+        Array.prototype.forEach.call(listEl.querySelectorAll('[data-action="open-status"]'), function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openStatusPopover(btn);
+            });
+        });
+        Array.prototype.forEach.call(listEl.querySelectorAll('[data-action="toggle-desc"]'), function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var row = btn.closest('.mt-row');
+                var desc = row.querySelector('.mt-row-desc');
+                if (!desc) return;
+                var hidden = desc.hidden;
+                desc.hidden = !hidden;
+                btn.classList.toggle('expanded', hidden);
+            });
+        });
+        Array.prototype.forEach.call(listEl.querySelectorAll('[data-action="toggle-subtasks"]'), function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var wrap = btn.closest('.mt-row-wrap');
+                if (!wrap) return;
+                var subs = wrap.querySelector('.mt-subtasks');
+                if (!subs) return;
+                var hidden = subs.hidden;
+                subs.hidden = !hidden;
+                btn.classList.toggle('expanded', hidden);
+            });
+        });
+        Array.prototype.forEach.call(listEl.querySelectorAll('[data-action="quick-worklog"]'), function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openWorklogForKey(btn.dataset.key);
+            });
+        });
+        Array.prototype.forEach.call(listEl.querySelectorAll('[data-action="edit-desc"]'), function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openEditDesc(btn.dataset.key, btn.dataset.summary);
             });
         });
     }
 
-    document.getElementById('mt-only-bugs').addEventListener('change', renderMyTasks);
+    /* Abrir modal de registrar tiempo con clave precargada (sin cerrar el actual) */
+    window.openWorklogForKey = function(issueKey) {
+        // Abrir el listado de worklogs (que tiene botón para añadir)
+        var summary = '';
+        for (var i = 0; i < myTasksData.length; i++) {
+            if (myTasksData[i].key === issueKey) {
+                summary = myTasksData[i].summary;
+                break;
+            }
+            for (var j = 0; j < (myTasksData[i].subtasks || []).length; j++) {
+                if (myTasksData[i].subtasks[j].key === issueKey) {
+                    summary = myTasksData[i].subtasks[j].summary;
+                    break;
+                }
+            }
+            if (summary) break;
+        }
+        openWorklogsList(issueKey, summary);
+    };
+
+    /* ===== Modal "Tiempo registrado" (lista por tarea) ===== */
+    var currentWorklogsKey = null;
+
+    window.openWorklogsList = function(issueKey, summary) {
+        currentWorklogsKey = issueKey;
+        document.getElementById('wls-issue').innerHTML =
+            '<span class="key">' + escHtml(issueKey) + '</span> · ' + escHtml(summary || '');
+        document.getElementById('wls-issue').dataset.key = issueKey;
+        document.getElementById('wls-issue').dataset.summary = summary || '';
+        document.getElementById('wls-list').innerHTML = '<div class="no-data"><span class="spinner"></span> Cargando…</div>';
+        document.getElementById('wls-total').textContent = '';
+        document.getElementById('worklogsModal').classList.add('active');
+        refreshWorklogsList();
+    };
+
+    window.closeWorklogsList = function() {
+        document.getElementById('worklogsModal').classList.remove('active');
+        currentWorklogsKey = null;
+    };
+
+    function refreshWorklogsList() {
+        var key = currentWorklogsKey;
+        if (!key) return;
+        var listEl = document.getElementById('wls-list');
+        var totalEl = document.getElementById('wls-total');
+
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'list_worklogs', issueKey: key })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) throw new Error(data.error || 'Error');
+            var wls = data.worklogs || [];
+            if (wls.length === 0) {
+                listEl.innerHTML = '<div class="no-data" style="padding:var(--space-6);">' +
+                    '<div style="font-size:1.05rem; margin-bottom:6px;">⏱ Sin tiempo registrado</div>' +
+                    '<div style="font-size:0.82rem;">Aún no has logueado horas en esta tarea</div>' +
+                '</div>';
+                totalEl.textContent = '';
+                return;
+            }
+            var totalSec = 0;
+            wls.forEach(function(w) { totalSec += parseInt(w.timeSpentSeconds || 0); });
+            var totalH = Math.round(totalSec / 3600 * 100) / 100;
+            totalEl.textContent = '· ' + wls.length + ' registro' + (wls.length > 1 ? 's' : '') + ' · ' + totalH + 'h total';
+
+            listEl.innerHTML = wls.map(function(wl) {
+                var commentHtml = wl.comment
+                    ? '<div class="wls-comment">' + escHtml(wl.comment).replace(/\n/g, '<br>') + '</div>'
+                    : '<div class="wls-comment empty">Sin descripción</div>';
+                var dataAttrs = ' data-key="' + escAttr(key) + '"' +
+                    ' data-id="' + escAttr(wl.id) + '"' +
+                    ' data-date="' + escAttr(wl.date) + '"' +
+                    ' data-time="' + escAttr(wl.time) + '"' +
+                    ' data-duration="' + escAttr(wl.timeSpent) + '"' +
+                    ' data-comment="' + escAttr(wl.comment || '') + '"';
+                return '<div class="wls-row" data-wl-id="' + escAttr(wl.id) + '">' +
+                    '<div class="wls-meta">' +
+                        '<span class="wls-time">' + escHtml(wl.timeSpent) + '</span>' +
+                        '<span class="wls-date">' + escHtml(wl.date) + ' · ' + escHtml(wl.time) + '</span>' +
+                    '</div>' +
+                    commentHtml +
+                    '<div class="wls-actions">' +
+                        '<button class="mt-action-btn" data-action="wls-edit"' + dataAttrs + ' title="Editar">✎</button>' +
+                        '<button class="mt-action-btn" data-action="wls-delete"' + dataAttrs + ' title="Eliminar">🗑</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+
+            Array.prototype.forEach.call(listEl.querySelectorAll('[data-action="wls-edit"]'), function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    openWorklogModal('edit', btn.dataset.key, btn.dataset.id, btn.dataset.date, btn.dataset.time, btn.dataset.duration, btn.dataset.comment || '');
+                });
+            });
+            Array.prototype.forEach.call(listEl.querySelectorAll('[data-action="wls-delete"]'), function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (!confirm('¿Eliminar el registro de ' + btn.dataset.duration + '?')) return;
+                    var origText = btn.textContent;
+                    btn.disabled = true; btn.textContent = '…';
+                    fetch(location.pathname + location.search, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'delete_worklog', issueKey: btn.dataset.key, worklogId: btn.dataset.id })
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (!data.ok) throw new Error(data.error || 'Error');
+                        toast(btn.dataset.duration + ' eliminado', 'success', {
+                            actionLabel: 'Deshacer',
+                            duration: 6000,
+                            onAction: function() {
+                                undoDeleteWorklog({
+                                    issueKey: btn.dataset.key,
+                                    summary: '',
+                                    project: '',
+                                    status: '',
+                                    time: btn.dataset.time,
+                                    date: btn.dataset.date,
+                                    timeSpent: btn.dataset.duration
+                                });
+                                setTimeout(refreshWorklogsList, 600);
+                            }
+                        });
+                        refreshWorklogsList();
+                    })
+                    .catch(function(err) {
+                        btn.disabled = false; btn.textContent = origText;
+                        toast('Error: ' + err.message, 'error');
+                    });
+                });
+            });
+        })
+        .catch(function(err) {
+            listEl.innerHTML = '<div class="no-data" style="color:var(--color-danger);">Error: ' + escHtml(err.message) + '</div>';
+        });
+    }
+
+    window.newWorklogFromList = function() {
+        var key = document.getElementById('wls-issue').dataset.key;
+        if (!key) return;
+        openWorklogModal('add', key, '', TODAY_STR, '', '', '');
+    };
+
+    /* ===== Modal de editar descripción ===== */
+    window.openEditDesc = function(issueKey, summary) {
+        document.getElementById('ed-issue').innerHTML =
+            '<span class="key">' + escHtml(issueKey) + '</span> · ' + escHtml(summary || '');
+        document.getElementById('ed-issue').dataset.key = issueKey;
+        var ta = document.getElementById('ed-text');
+        ta.value = '';
+        ta.disabled = true;
+        document.getElementById('ed-loading').hidden = false;
+        document.getElementById('ed-error').hidden = true;
+        var btn = document.getElementById('ed-submit');
+        btn.disabled = false;
+        btn.textContent = 'Guardar';
+        document.getElementById('editDescModal').classList.add('active');
+
+        // Cargar descripción actual del server
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'get_issue_full', issueKey: issueKey })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            document.getElementById('ed-loading').hidden = true;
+            ta.disabled = false;
+            if (!data.ok) throw new Error(data.error || 'Error');
+            ta.value = data.description || '';
+            ta.focus();
+        })
+        .catch(function(err) {
+            document.getElementById('ed-loading').hidden = true;
+            ta.disabled = false;
+            var errEl = document.getElementById('ed-error');
+            errEl.textContent = 'No se pudo cargar la descripción actual: ' + err.message;
+            errEl.hidden = false;
+        });
+    };
+    window.closeEditDesc = function() {
+        document.getElementById('editDescModal').classList.remove('active');
+    };
+    window.submitEditDesc = function() {
+        var key = document.getElementById('ed-issue').dataset.key;
+        var description = document.getElementById('ed-text').value;
+        var btn = document.getElementById('ed-submit');
+        var errEl = document.getElementById('ed-error');
+        errEl.hidden = true;
+        setBtnLoading(btn, true, 'Guardando…');
+
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'update_description', issueKey: key, description: description })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) throw new Error(data.error || 'Error');
+            closeEditDesc();
+            toast('Descripción actualizada en ' + key, 'success');
+            // Sincronizar local data si está en la lista
+            for (var i = 0; i < myTasksData.length; i++) {
+                if (myTasksData[i].key === key) {
+                    myTasksData[i].description = description.length > 1000 ? description.slice(0, 1000) + '…' : description;
+                    break;
+                }
+            }
+            renderMyTasks();
+        })
+        .catch(function(err) {
+            errEl.textContent = err.message;
+            errEl.hidden = false;
+            setBtnLoading(btn, false);
+        });
+    };
+
+    /* Cmd+Enter en editar descripción */
+    document.getElementById('editDescModal').addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            submitEditDesc();
+        }
+    });
+
+    function closeAllPopovers() {
+        document.querySelectorAll('.mt-popover').forEach(function(p) {
+            p.hidden = true;
+            p.innerHTML = '';
+        });
+    }
+
+    function openStatusPopover(btn) {
+        var row = btn.closest('.mt-row');
+        if (!row) return;
+        var pop = row.querySelector('.mt-popover');
+        if (!pop) return;
+        var alreadyOpen = !pop.hidden;
+        closeAllPopovers();
+        if (alreadyOpen) return;
+
+        var issueKey = btn.dataset.key;
+        pop.hidden = false;
+        pop.innerHTML = '<div class="mt-popover-loading"><span class="spinner"></span> Cargando estados…</div>';
+
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'get_transitions', issueKey: issueKey })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) throw new Error(data.error || 'Error');
+            if (!data.transitions || data.transitions.length === 0) {
+                pop.innerHTML = '<div class="mt-popover-empty">Sin transiciones disponibles</div>';
+                return;
+            }
+            pop.innerHTML = data.transitions.map(function(t) {
+                return '<button class="mt-popover-item" data-id="' + escAttr(t.id) + '" data-name="' + escAttr(t.toName || t.name) + '">' +
+                    escHtml(t.toName || t.name) + '</button>';
+            }).join('');
+            Array.prototype.forEach.call(pop.querySelectorAll('.mt-popover-item'), function(it) {
+                it.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    applyStatusFromPopover(issueKey, it.dataset.id, it.dataset.name, btn, pop);
+                });
+            });
+        })
+        .catch(function(err) {
+            pop.innerHTML = '<div class="mt-popover-empty" style="color:var(--color-danger);">Error: ' + escHtml(err.message) + '</div>';
+        });
+    }
+
+    function applyStatusFromPopover(issueKey, transitionId, transitionName, statusBtn, pop) {
+        pop.innerHTML = '<div class="mt-popover-loading"><span class="spinner"></span> Aplicando…</div>';
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'apply_transition', issueKey: issueKey, transitionId: transitionId })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) throw new Error(data.error || 'Error');
+            // Actualizar UI
+            statusBtn.textContent = data.status || transitionName;
+            statusBtn.className = 'mt-status-current ' + jiraStatusClassJs(data.status || transitionName);
+            // Sincronizar el dataset local
+            for (var i = 0; i < myTasksData.length; i++) {
+                if (myTasksData[i].key === issueKey) {
+                    myTasksData[i].status = data.status || transitionName;
+                    break;
+                }
+            }
+            populateTypeFilters();
+            closeAllPopovers();
+            toast(issueKey + ' → ' + (data.status || transitionName), 'success');
+        })
+        .catch(function(err) {
+            pop.innerHTML = '<div class="mt-popover-empty" style="color:var(--color-danger);">' + escHtml(err.message) + '</div>';
+            toast('No se pudo cambiar el estado: ' + err.message, 'error');
+        });
+    }
+
+    /* Cerrar popovers al click fuera */
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.mt-popover') && !e.target.closest('[data-action="open-status"]')) {
+            closeAllPopovers();
+        }
+    });
+
+    document.getElementById('mt-filter-type').addEventListener('change', renderMyTasks);
+    document.getElementById('mt-filter-status').addEventListener('change', renderMyTasks);
     document.getElementById('mt-search').addEventListener('input', renderMyTasks);
 
-    window.openSubtask = function(parentKey, parentSummary) {
+    window.openSubtask = function(parentKey, parentSummary, parentDescription) {
         document.getElementById('st-parent').innerHTML =
             '<span class="key">' + escHtml(parentKey) + '</span> · ' + escHtml(parentSummary || '');
         document.getElementById('st-parent').dataset.parent = parentKey;
+        var descEl = document.getElementById('st-parent-desc');
+        if (parentDescription && parentDescription.trim()) {
+            descEl.textContent = parentDescription;
+            descEl.hidden = false;
+        } else {
+            descEl.textContent = '';
+            descEl.hidden = true;
+        }
         document.getElementById('st-summary').value = '';
         document.getElementById('st-description').value = '';
         document.getElementById('st-error').hidden = true;
@@ -3440,6 +4827,12 @@ function setBtnLoading(btn, loading, originalText) {
                 msg += ' — no se pudo cambiar el estado';
             }
             toast(msg, 'success');
+            // Si el modal de Mis tareas está abierto, agregar la subtarea a la lista
+            if (data.issue && document.getElementById('myTasksModal').classList.contains('active')) {
+                myTasksData.unshift(data.issue);
+                populateTypeFilters();
+                renderMyTasks();
+            }
         })
         .catch(function(err) {
             errEl.textContent = err.message;
@@ -3454,6 +4847,84 @@ function setBtnLoading(btn, loading, originalText) {
             e.preventDefault();
             submitSubtask();
         }
+    });
+
+    /* ===== Edición inline de duración ===== */
+    document.body.addEventListener('dblclick', function(e) {
+        var cell = e.target.closest('.editable-duration');
+        if (!cell || cell.classList.contains('editing')) return;
+
+        var row = cell.closest('tr[data-wl-id]');
+        if (!row) return;
+        var worklogId = row.dataset.wlId;
+        if (!worklogId) return;
+
+        var keyCell = row.querySelector('td .key-link');
+        var issueKey = keyCell ? keyCell.textContent.trim() : '';
+
+        var startedCells = row.querySelectorAll('td.mono');
+        var time = startedCells[0] ? startedCells[0].textContent.trim() : '09:00';
+
+        var dayEl = row.closest('.day');
+        var date = dayEl ? dayEl.dataset.date : '';
+        if (!date) return;
+
+        var originalText = cell.textContent;
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.value = originalText;
+        cell.textContent = '';
+        cell.appendChild(input);
+        cell.classList.add('editing');
+        input.focus();
+        input.select();
+
+        var saving = false;
+
+        function restore() {
+            cell.classList.remove('editing');
+            cell.textContent = originalText;
+        }
+
+        function save() {
+            if (saving) return;
+            var newDur = input.value.trim();
+            if (newDur === originalText || !newDur) {
+                restore();
+                return;
+            }
+            saving = true;
+            cell.classList.remove('editing');
+            cell.innerHTML = '<span class="spinner" style="width:10px;height:10px;border-width:1px;"></span>';
+            fetch(location.pathname + location.search, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'update_worklog',
+                    issueKey: issueKey,
+                    worklogId: worklogId,
+                    date: date,
+                    time: time,
+                    duration: newDur
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.ok) throw new Error(data.error || 'Error');
+                updateWorklogInDOM(worklogId, time, newDur);
+                toast(newDur + ' actualizado en ' + issueKey, 'success');
+            })
+            .catch(function(err) {
+                cell.textContent = originalText;
+                toast('Error: ' + err.message, 'error');
+            });
+        }
+
+        input.addEventListener('blur', save);
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+            else if (e.key === 'Escape') { e.preventDefault(); saving = true; restore(); }
+        });
     });
 
     /* ===== Atajos de teclado globales ===== */

@@ -187,20 +187,152 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             exit;
         }
+        if ($action === 'apply_transition') {
+            $issueKey = strtoupper(trim($body['issueKey'] ?? ''));
+            $transitionId = trim($body['transitionId'] ?? '');
+            if (!$issueKey || !$transitionId) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Faltan issueKey o transitionId']);
+                exit;
+            }
+            try {
+                $client->applyTransitionById($issueKey, $transitionId);
+                $issue = $client->getIssue($issueKey);
+                AuthSession::clearReportCache();
+                echo json_encode([
+                    'ok'     => true,
+                    'status' => $issue['fields']['status']['name'] ?? '',
+                ]);
+            } catch (\Throwable $e) {
+                http_response_code(500);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+            exit;
+        }
+        if ($action === 'get_transitions') {
+            $issueKey = strtoupper(trim($body['issueKey'] ?? ''));
+            if (!$issueKey) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Falta issueKey']);
+                exit;
+            }
+            try {
+                $transitions = $client->getIssueTransitions($issueKey);
+                $simple = [];
+                foreach ($transitions as $t) {
+                    $simple[] = [
+                        'id'     => $t['id'] ?? '',
+                        'name'   => $t['name'] ?? '',
+                        'toName' => $t['to']['name'] ?? '',
+                        'toCategory' => $t['to']['statusCategory']['key'] ?? '',
+                    ];
+                }
+                echo json_encode(['ok' => true, 'transitions' => $simple]);
+            } catch (\Throwable $e) {
+                http_response_code(500);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+            exit;
+        }
         if ($action === 'list_assigned') {
             $issues = $client->getMyAssignedIssues(30);
             $out = [];
             foreach ($issues as $iss) {
+                $desc = trim(JiraClient::adfToText($iss['fields']['description'] ?? null));
+                $subs = [];
+                foreach ($iss['fields']['subtasks'] ?? [] as $st) {
+                    $subs[] = [
+                        'key'       => $st['key'] ?? '',
+                        'summary'   => $st['fields']['summary'] ?? '',
+                        'status'    => $st['fields']['status']['name'] ?? '',
+                        'issuetype' => $st['fields']['issuetype']['name'] ?? 'Sub-task',
+                    ];
+                }
                 $out[] = [
-                    'key'       => $iss['key'],
-                    'summary'   => $iss['fields']['summary']        ?? '',
-                    'status'    => $iss['fields']['status']['name'] ?? '',
-                    'project'   => $iss['fields']['project']['name'] ?? '',
-                    'issuetype' => $iss['fields']['issuetype']['name'] ?? '',
-                    'priority'  => $iss['fields']['priority']['name'] ?? '',
+                    'key'         => $iss['key'],
+                    'summary'     => $iss['fields']['summary']        ?? '',
+                    'status'      => $iss['fields']['status']['name'] ?? '',
+                    'project'     => $iss['fields']['project']['name'] ?? '',
+                    'issuetype'   => $iss['fields']['issuetype']['name'] ?? '',
+                    'priority'    => $iss['fields']['priority']['name'] ?? '',
+                    'description' => mb_strlen($desc) > 1000 ? mb_substr($desc, 0, 1000) . '…' : $desc,
+                    'subtasks'    => $subs,
                 ];
             }
             echo json_encode(['ok' => true, 'issues' => $out]);
+            exit;
+        }
+        if ($action === 'list_worklogs') {
+            $issueKey = strtoupper(trim($body['issueKey'] ?? ''));
+            if (!$issueKey) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Falta issueKey']);
+                exit;
+            }
+            try {
+                $data = $client->getIssueWorklogs($issueKey);
+                $cachedMe = AuthSession::cachedMyself($client);
+                $myAccountId = $cachedMe['accountId'] ?? '';
+                $tz = new DateTimeZone($timezone);
+                $worklogs = [];
+                foreach ($data['worklogs'] ?? [] as $wl) {
+                    if (($wl['author']['accountId'] ?? '') !== $myAccountId) continue;
+                    $started = new DateTime($wl['started']);
+                    $started->setTimezone($tz);
+                    $worklogs[] = [
+                        'id'        => $wl['id'] ?? '',
+                        'date'      => $started->format('Y-m-d'),
+                        'time'      => $started->format('H:i'),
+                        'timeSpent' => $wl['timeSpent'] ?? '',
+                        'timeSpentSeconds' => (int) ($wl['timeSpentSeconds'] ?? 0),
+                        'comment'   => JiraClient::adfToText($wl['comment'] ?? null),
+                    ];
+                }
+                usort($worklogs, fn($a, $b) => strcmp($b['date'] . $b['time'], $a['date'] . $a['time']));
+                echo json_encode(['ok' => true, 'worklogs' => $worklogs]);
+            } catch (\Throwable $e) {
+                http_response_code(500);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+            exit;
+        }
+        if ($action === 'get_issue_full') {
+            $issueKey = strtoupper(trim($body['issueKey'] ?? ''));
+            if (!$issueKey) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Falta issueKey']);
+                exit;
+            }
+            try {
+                $issue = $client->getIssue($issueKey, 'summary,status,description,issuetype,project');
+                echo json_encode([
+                    'ok'          => true,
+                    'key'         => $issueKey,
+                    'summary'     => $issue['fields']['summary']        ?? '',
+                    'status'      => $issue['fields']['status']['name'] ?? '',
+                    'description' => JiraClient::adfToText($issue['fields']['description'] ?? null),
+                ]);
+            } catch (\Throwable $e) {
+                http_response_code(500);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+            exit;
+        }
+        if ($action === 'update_description') {
+            $issueKey = strtoupper(trim($body['issueKey'] ?? ''));
+            $description = (string) ($body['description'] ?? '');
+            if (!$issueKey) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Falta issueKey']);
+                exit;
+            }
+            try {
+                $client->updateIssueDescription($issueKey, $description);
+                echo json_encode(['ok' => true]);
+            } catch (\Throwable $e) {
+                http_response_code(500);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
             exit;
         }
         if ($action === 'create_subtask') {
@@ -215,10 +347,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $cachedMe = AuthSession::cachedMyself($client);
             $accountId = $cachedMe['accountId'] ?? null;
             $result = $client->createSubtaskAndTransition($parentKey, $summary, $description ?: null, $accountId);
+            $newKey = $result['key'] ?? '';
+
+            // Obtener info completa del issue para que el frontend lo agregue a la lista
+            $issueData = null;
+            if ($newKey) {
+                try {
+                    $issue = $client->getIssue($newKey);
+                    $issueData = [
+                        'key'       => $newKey,
+                        'summary'   => $issue['fields']['summary'] ?? $summary,
+                        'project'   => $issue['fields']['project']['name'] ?? '',
+                        'status'    => $issue['fields']['status']['name'] ?? '',
+                        'issuetype' => $issue['fields']['issuetype']['name'] ?? 'Sub-task',
+                        'priority'  => $issue['fields']['priority']['name'] ?? '',
+                    ];
+                } catch (\Throwable $e) {
+                    // ignorar - igual el client puede mostrar el básico
+                }
+            }
+
             echo json_encode([
-                'ok'             => true,
-                'key'            => $result['key'],
-                'transitionName' => $result['transition']['name'] ?? null,
+                'ok'               => true,
+                'key'              => $newKey,
+                'issue'            => $issueData,
+                'transitionName'   => $result['transition']['name'] ?? null,
                 'transitionFailed' => isset($result['transition']['error']),
             ]);
             exit;
@@ -238,6 +391,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $date     = $body['date'] ?? '';
             $time     = $body['time'] ?? '09:00';
             $duration = trim($body['duration'] ?? '');
+            $comment  = trim($body['comment'] ?? '');
+            $transitionId = trim($body['transitionId'] ?? '');
 
             if (!$issueKey || !$date || !$duration) {
                 http_response_code(400);
@@ -261,8 +416,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dt      = new DateTime($date . ' ' . $time, new DateTimeZone($timezone));
             $started = $dt->format('Y-m-d\TH:i:s.000O');
 
-            $wlResult = $client->addWorklog($issueKey, $started, $seconds);
-            $issue    = $client->getIssue($issueKey);
+            $wlResult = $client->addWorklog($issueKey, $started, $seconds, $comment ?: null);
+
+            $transitionStatus = null;
+            if ($transitionId) {
+                try {
+                    $client->applyTransitionById($issueKey, $transitionId);
+                    $transitionStatus = ['ok' => true];
+                } catch (\Throwable $e) {
+                    $transitionStatus = ['ok' => false, 'error' => $e->getMessage()];
+                }
+            }
+
+            $issue = $client->getIssue($issueKey);
             AuthSession::clearReportCache();
             echo json_encode([
                 'ok'        => true,
@@ -270,6 +436,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'summary'   => $issue['fields']['summary'] ?? '',
                 'project'   => $issue['fields']['project']['name'] ?? '',
                 'status'    => $issue['fields']['status']['name'] ?? '',
+                'transition' => $transitionStatus,
             ]);
             exit;
         }
@@ -302,9 +469,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dt      = new DateTime($date . ' ' . $time, new DateTimeZone($timezone));
             $started = $dt->format('Y-m-d\TH:i:s.000O');
 
-            $client->updateWorklog($issueKey, $worklogId, $started, $seconds);
+            $comment = trim($body['comment'] ?? '');
+            $transitionId = trim($body['transitionId'] ?? '');
+
+            $client->updateWorklog($issueKey, $worklogId, $started, $seconds, $comment ?: null);
+
+            $transitionStatus = null;
+            if ($transitionId) {
+                try {
+                    $client->applyTransitionById($issueKey, $transitionId);
+                    $transitionStatus = ['ok' => true];
+                } catch (\Throwable $e) {
+                    $transitionStatus = ['ok' => false, 'error' => $e->getMessage()];
+                }
+            }
+
             AuthSession::clearReportCache();
-            echo json_encode(['ok' => true]);
+            echo json_encode(['ok' => true, 'transition' => $transitionStatus]);
             exit;
         }
         if ($action === 'delete_worklog') {

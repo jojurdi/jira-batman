@@ -204,6 +204,7 @@ class WorklogReport
                     'timeSpent' => $wl['timeSpent'] ?? '',
                     'timeSpentSeconds' => $seconds,
                     'started' => $started->format('H:i'),
+                    'comment' => JiraClient::adfToText($wl['comment'] ?? null),
                 ];
                 $dayMap[$dayKey]['totalSeconds'] += $seconds;
             }

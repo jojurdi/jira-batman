@@ -207,11 +207,22 @@ class JiraClient
         return [];
     }
 
-    public function getIssue(string $issueKey): array
+    public function getIssue(string $issueKey, string $fields = 'summary,status,project'): array
     {
         return $this->get("/rest/api/3/issue/{$issueKey}", [
-            'fields' => 'summary,status,project',
+            'fields' => $fields,
         ]);
+    }
+
+    /**
+     * Actualiza la descripción de un issue. Si $description es '' la borra.
+     */
+    public function updateIssueDescription(string $issueKey, string $description): void
+    {
+        $payload = ['fields' => [
+            'description' => $description !== '' ? $this->makeAdfText($description) : null,
+        ]];
+        $this->put("/rest/api/3/issue/{$issueKey}", $payload);
     }
 
     /**
@@ -334,12 +345,71 @@ class JiraClient
         return json_decode($response, true) ?? [];
     }
 
-    public function addWorklog(string $issueKey, string $started, int $timeSpentSeconds): array
+    public function addWorklog(string $issueKey, string $started, int $timeSpentSeconds, ?string $comment = null): array
     {
-        return $this->post("/rest/api/3/issue/{$issueKey}/worklog", [
+        $payload = [
             'started' => $started,
             'timeSpentSeconds' => $timeSpentSeconds,
-        ]);
+        ];
+        if ($comment !== null && $comment !== '') {
+            $payload['comment'] = $this->makeAdfText($comment);
+        }
+        return $this->post("/rest/api/3/issue/{$issueKey}/worklog", $payload);
+    }
+
+    /**
+     * Extrae texto plano de un nodo ADF (Atlassian Document Format).
+     * Útil para mostrar descriptions y comments que vienen como JSON anidado.
+     */
+    public static function adfToText($adf): string
+    {
+        if ($adf === null || $adf === '') return '';
+        if (is_string($adf)) return $adf;
+        if (!is_array($adf)) return '';
+        return rtrim(self::extractAdfNode($adf));
+    }
+
+    private static function extractAdfNode($node): string
+    {
+        if (!is_array($node)) return '';
+        $out = '';
+        if (isset($node['text']) && is_string($node['text'])) {
+            $out .= $node['text'];
+        }
+        if (isset($node['content']) && is_array($node['content'])) {
+            foreach ($node['content'] as $child) {
+                $out .= self::extractAdfNode($child);
+            }
+        }
+        $type = $node['type'] ?? '';
+        // Saltos entre paragraphs / list items / heading
+        if (in_array($type, ['paragraph', 'heading', 'listItem', 'blockquote', 'codeBlock'], true)) {
+            $out .= "\n";
+        } elseif ($type === 'hardBreak') {
+            $out .= "\n";
+        }
+        return $out;
+    }
+
+    /**
+     * Convierte texto plano a Atlassian Document Format (ADF), formato requerido
+     * por Jira Cloud para comments y descriptions.
+     */
+    private function makeAdfText(string $text): array
+    {
+        $lines = preg_split('/\r\n|\r|\n/', $text);
+        $content = [];
+        foreach ($lines as $line) {
+            $para = ['type' => 'paragraph', 'content' => []];
+            if ($line !== '') {
+                $para['content'][] = ['type' => 'text', 'text' => $line];
+            }
+            $content[] = $para;
+        }
+        if (empty($content)) {
+            $content[] = ['type' => 'paragraph', 'content' => []];
+        }
+        return ['type' => 'doc', 'version' => 1, 'content' => $content];
     }
 
     public function put(string $endpoint, array $data): array
@@ -376,11 +446,28 @@ class JiraClient
         return json_decode($response, true) ?? [];
     }
 
-    public function updateWorklog(string $issueKey, string $worklogId, string $started, int $timeSpentSeconds): array
+    public function updateWorklog(string $issueKey, string $worklogId, string $started, int $timeSpentSeconds, ?string $comment = null): array
     {
-        return $this->put("/rest/api/3/issue/{$issueKey}/worklog/{$worklogId}", [
+        $payload = [
             'started' => $started,
             'timeSpentSeconds' => $timeSpentSeconds,
+        ];
+        if ($comment !== null && $comment !== '') {
+            $payload['comment'] = $this->makeAdfText($comment);
+        }
+        return $this->put("/rest/api/3/issue/{$issueKey}/worklog/{$worklogId}", $payload);
+    }
+
+    public function getIssueTransitions(string $issueKey): array
+    {
+        $data = $this->get("/rest/api/3/issue/{$issueKey}/transitions");
+        return $data['transitions'] ?? [];
+    }
+
+    public function applyTransitionById(string $issueKey, string $transitionId): void
+    {
+        $this->post("/rest/api/3/issue/{$issueKey}/transitions", [
+            'transition' => ['id' => $transitionId],
         ]);
     }
 
@@ -390,7 +477,7 @@ class JiraClient
     public function getMyAssignedIssues(int $limit = 30): array
     {
         $jql = 'assignee = currentUser() AND statusCategory != Done ORDER BY priority DESC, updated DESC';
-        $result = $this->searchIssues($jql, $limit, 'summary,status,priority,project,issuetype');
+        $result = $this->searchIssues($jql, $limit, 'summary,status,priority,project,issuetype,description,subtasks');
         return $result['issues'] ?? [];
     }
 
