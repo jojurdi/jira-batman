@@ -1,0 +1,10 @@
+# Permitir reescritura
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Reescribir el callback OAuth sin .php (la URL registrada en Atlassian
+    # no incluye la extensión).
+    # En subdirectorio /jira-batman/, la base la fija APP_BASE_URL del .env;
+    # aquí solo necesitamos reescribir el segmento relativo al docroot público.
+    RewriteRule ^oauth/callback/?$ oauth/callback.php [L]
+</IfModule>

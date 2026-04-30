@@ -6,11 +6,74 @@ class JiraClient
 {
     private string $baseUrl;
     private string $authHeader;
+    private string $noProxyHost;
 
-    public function __construct(string $baseUrl, string $email, string $apiToken)
+    public function __construct(string $baseUrl, string $authHeader)
     {
         $this->baseUrl = rtrim($baseUrl, '/');
-        $this->authHeader = 'Basic ' . base64_encode($email . ':' . $apiToken);
+        $this->authHeader = $authHeader;
+        $this->noProxyHost = parse_url($this->baseUrl, PHP_URL_HOST) ?: '';
+    }
+
+    public static function fromBasic(string $jiraUrl, string $email, string $apiToken): self
+    {
+        return new self($jiraUrl, 'Basic ' . base64_encode($email . ':' . $apiToken));
+    }
+
+    public static function fromOAuth(string $cloudId, string $accessToken): self
+    {
+        return new self("https://api.atlassian.com/ex/jira/{$cloudId}", 'Bearer ' . $accessToken);
+    }
+
+    /**
+     * Ejecuta una petición cURL y reintenta alternando proxy/no-proxy
+     * según el tipo de error de red detectado.
+     */
+    private function executeWithProxyFallback(array $options): array
+    {
+        $attemptModes = ['no_proxy', 'default'];
+        $last = ['response' => false, 'httpCode' => 0, 'error' => ''];
+
+        foreach ($attemptModes as $mode) {
+            $attemptOptions = $options;
+
+            if ($mode === 'no_proxy' && $this->noProxyHost !== '') {
+                $attemptOptions[CURLOPT_NOPROXY] = $this->noProxyHost;
+            } else {
+                unset($attemptOptions[CURLOPT_NOPROXY]);
+            }
+
+            $ch = curl_init();
+            curl_setopt_array($ch, $attemptOptions);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            $last = ['response' => $response, 'httpCode' => $httpCode, 'error' => $error];
+
+            if ($error === '') {
+                return $last;
+            }
+
+            $isConnectTunnelError = stripos($error, 'CONNECT tunnel failed') !== false;
+            $isHostResolveError = stripos($error, 'Could not resolve host') !== false;
+
+            // Si sin proxy no resuelve DNS, probamos con proxy (siguiente intento).
+            if ($mode === 'no_proxy' && $isHostResolveError) {
+                continue;
+            }
+
+            // Si con proxy falla túnel CONNECT, ya probamos sin proxy primero.
+            if ($mode === 'default' && $isConnectTunnelError) {
+                continue;
+            }
+
+            break;
+        }
+
+        return $last;
     }
 
     public function get(string $endpoint, array $params = []): array
@@ -20,8 +83,7 @@ class JiraClient
             $url .= '?' . http_build_query($params);
         }
 
-        $ch = curl_init();
-        curl_setopt_array($ch, [
+        $result = $this->executeWithProxyFallback([
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => [
@@ -32,11 +94,9 @@ class JiraClient
             CURLOPT_TIMEOUT => 30,
             CURLOPT_SSL_VERIFYPEER => true,
         ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
+        $response = $result['response'];
+        $httpCode = $result['httpCode'];
+        $error = $result['error'];
 
         if ($error) {
             throw new \RuntimeException("Error de cURL: {$error}");
@@ -81,8 +141,7 @@ class JiraClient
     {
         $url = $this->baseUrl . $endpoint;
 
-        $ch = curl_init();
-        curl_setopt_array($ch, [
+        $result = $this->executeWithProxyFallback([
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
@@ -95,11 +154,9 @@ class JiraClient
             CURLOPT_TIMEOUT => 30,
             CURLOPT_SSL_VERIFYPEER => true,
         ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
+        $response = $result['response'];
+        $httpCode = $result['httpCode'];
+        $error = $result['error'];
 
         if ($error) {
             throw new \RuntimeException("Error de cURL: {$error}");
@@ -126,8 +183,7 @@ class JiraClient
     {
         $url = $this->baseUrl . $endpoint;
 
-        $ch = curl_init();
-        curl_setopt_array($ch, [
+        $result = $this->executeWithProxyFallback([
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CUSTOMREQUEST => 'PUT',
@@ -140,11 +196,9 @@ class JiraClient
             CURLOPT_TIMEOUT => 30,
             CURLOPT_SSL_VERIFYPEER => true,
         ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
+        $response = $result['response'];
+        $httpCode = $result['httpCode'];
+        $error = $result['error'];
 
         if ($error) {
             throw new \RuntimeException("Error de cURL: {$error}");
@@ -171,8 +225,7 @@ class JiraClient
     {
         $url = $this->baseUrl . "/rest/api/3/issue/{$issueKey}/worklog/{$worklogId}";
 
-        $ch = curl_init();
-        curl_setopt_array($ch, [
+        $result = $this->executeWithProxyFallback([
             CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CUSTOMREQUEST  => 'DELETE',
@@ -183,11 +236,9 @@ class JiraClient
             CURLOPT_TIMEOUT        => 30,
             CURLOPT_SSL_VERIFYPEER => true,
         ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error    = curl_error($ch);
-        curl_close($ch);
+        $response = $result['response'];
+        $httpCode = $result['httpCode'];
+        $error    = $result['error'];
 
         if ($error) {
             throw new \RuntimeException("Error de cURL: {$error}");

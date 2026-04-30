@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="<?= htmlspecialchars(\App\AuthSession::appBaseUrl()) ?>">
     <title>Jira Batman</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -527,7 +528,18 @@
         </div>
         <div class="header-right">
             <?php if ($displayName): ?>
-                <span class="user-info"><?= htmlspecialchars($displayName) ?> &middot; <?= htmlspecialchars($timezone) ?></span>
+                <span class="user-info">
+                    <?= htmlspecialchars($displayName) ?>
+                    <?php if ($authMethod === 'oauth'): ?>
+                        &middot; <span title="Sesi&oacute;n OAuth activa" style="color:#16793a;">&#x25cf; OAuth</span>
+                    <?php endif; ?>
+                    &middot; <?= htmlspecialchars($timezone) ?>
+                </span>
+            <?php endif; ?>
+            <?php if ($authMethod === 'oauth'): ?>
+                <a class="btn-settings" href="oauth/logout.php" title="Cerrar sesi&oacute;n" style="text-decoration:none;">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M6 12.5a.5.5 0 01.5.5v.5a.5.5 0 00.5.5h6a.5.5 0 00.5-.5v-11a.5.5 0 00-.5-.5h-6a.5.5 0 00-.5.5V3a.5.5 0 01-1 0v-.5A1.5 1.5 0 016.5.5h6A1.5 1.5 0 0114 2v11.5a1.5 1.5 0 01-1.5 1.5h-6A1.5 1.5 0 015 13.5V13a.5.5 0 01.5-.5z"/><path d="M.146 8.354a.5.5 0 010-.708l3-3a.5.5 0 11.708.708L1.707 7.5H10.5a.5.5 0 010 1H1.707l2.147 2.146a.5.5 0 01-.708.708l-3-3z"/></svg>
+                </a>
             <?php endif; ?>
             <button class="btn-settings" onclick="openSettings()" title="Configuraci&oacute;n">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 100 6.492 3.246 3.246 0 000-6.492zM5.754 8a2.246 2.246 0 114.492 0 2.246 2.246 0 01-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 01-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 01-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 01.52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 011.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 011.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 01.52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 01-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 01-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 002.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 001.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 00-1.115 2.693l.16.291c.415.764-.421 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 00-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 00-2.692-1.115l-.292.16c-.764.415-1.6-.421-1.184-1.185l.159-.291A1.873 1.873 0 001.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 003.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 002.692-1.115l.094-.319z"/></svg>
@@ -538,8 +550,23 @@
     <?php if ($needsSetup): ?>
         <div class="setup-msg">
             <h2>Sin conexi&oacute;n configurada</h2>
-            <p>Configura tu email y API token de Jira para consultar tus horas.</p>
-            <button class="btn-sm primary" onclick="openSettings()">Configurar</button>
+            <p>
+                <?php if ($oauthAvailable): ?>
+                    Inicia sesi&oacute;n con tu cuenta de Atlassian o usa un API token.
+                <?php else: ?>
+                    Configura tu email y API token de Jira para consultar tus horas.
+                <?php endif; ?>
+            </p>
+            <?php if ($oauthAvailable): ?>
+                <a class="btn-sm primary" href="oauth/login.php" style="text-decoration:none;display:inline-flex;align-items:center;gap:0.4rem;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11.571 11.513H0a5.218 5.218 0 005.215 5.215h2.129v2.057A5.215 5.215 0 0012.56 24V12.5a.987.987 0 00-.989-.987zm5.715-5.785H5.715A5.215 5.215 0 0010.93 10.95h2.131v2.058a5.218 5.218 0 005.215 5.215V6.715a.987.987 0 00-.989-.987zM23 0H11.43a5.215 5.215 0 005.215 5.215h2.131v2.058A5.215 5.215 0 0024 12.5V.987A.987.987 0 0023 0z"/></svg>
+                    Iniciar sesi&oacute;n con Atlassian
+                </a>
+                <span style="margin: 0 0.5rem; color:#bbb;">o</span>
+                <button class="btn-sm" onclick="openSettings()">Usar API token</button>
+            <?php else: ?>
+                <button class="btn-sm primary" onclick="openSettings()">Configurar</button>
+            <?php endif; ?>
         </div>
     <?php else: ?>
         <div class="filters">
@@ -856,6 +883,28 @@
             <input type="text" value="<?= htmlspecialchars($jiraBaseUrl) ?>" readonly
                    style="background:#f5f5f5; color:#999; cursor:default;">
         </div>
+
+        <?php if ($oauthAvailable): ?>
+        <div class="field" style="border:1px solid #e5e5e5; border-radius:4px; padding:0.7rem 0.8rem; background:#fafafa;">
+            <label style="margin-bottom:0.3rem;">Sesi&oacute;n con Atlassian</label>
+            <?php if ($authMethod === 'oauth' && $oauthSession): ?>
+                <div style="font-size:0.78rem; color:#666; margin-bottom:0.5rem;">
+                    Activa en <strong><?= htmlspecialchars($oauthSession['cloud_name'] ?: $oauthSession['cloud_url']) ?></strong>
+                </div>
+                <a class="btn-sm danger" href="oauth/logout.php" style="text-decoration:none;">Cerrar sesi&oacute;n</a>
+            <?php else: ?>
+                <div style="font-size:0.78rem; color:#888; margin-bottom:0.5rem;">
+                    Recomendado. M&aacute;s seguro que usar un API token directamente.
+                </div>
+                <a class="btn-sm primary" href="oauth/login.php" style="text-decoration:none;display:inline-flex;align-items:center;gap:0.4rem;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M11.571 11.513H0a5.218 5.218 0 005.215 5.215h2.129v2.057A5.215 5.215 0 0012.56 24V12.5a.987.987 0 00-.989-.987zm5.715-5.785H5.715A5.215 5.215 0 0010.93 10.95h2.131v2.058a5.218 5.218 0 005.215 5.215V6.715a.987.987 0 00-.989-.987zM23 0H11.43a5.215 5.215 0 005.215 5.215h2.131v2.058A5.215 5.215 0 0024 12.5V.987A.987.987 0 0023 0z"/></svg>
+                    Iniciar sesi&oacute;n con Atlassian
+                </a>
+            <?php endif; ?>
+        </div>
+        <div style="text-align:center; color:#bbb; font-size:0.7rem; margin:0.6rem 0; text-transform:uppercase; letter-spacing:0.05em;">o usa un API token</div>
+        <?php endif; ?>
+
         <div class="field">
             <label for="cfg-email">Email</label>
             <input type="email" id="cfg-email" placeholder="tu@email.com">

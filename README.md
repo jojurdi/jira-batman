@@ -22,27 +22,41 @@ cd jira-batman
 composer install
 ```
 
-### 3. Variables de entorno (opcional)
-
-Solo necesitas `.env` si quieres cambiar zona horaria u horas por día:
+### 3. Variables de entorno
 
 ```bash
 cp .env.example .env
 ```
 
-| Variable        | Descripción |
-|----------------|-------------|
-| `TIMEZONE`     | Zona horaria (ej: `America/Mexico_City`) |
-| `HOURS_PER_DAY`| Horas por día para el cálculo de jornada (por defecto: 8) |
+| Variable                   | Descripción |
+|---------------------------|-------------|
+| `JIRA_BASE_URL`           | URL de tu Jira Cloud (ej: `https://miempresa.atlassian.net`). |
+| `JIRA_OAUTH_CLIENT_ID`    | (Opcional) Client ID de la app OAuth 2.0. |
+| `JIRA_OAUTH_CLIENT_SECRET`| (Opcional) Client Secret de la app OAuth 2.0. |
+| `JIRA_OAUTH_REDIRECT_URI` | (Opcional) URL de callback registrada en Atlassian. |
+| `TIMEZONE`                | Zona horaria (ej: `America/Mexico_City`). |
+| `HOURS_PER_DAY`           | Horas por día para el cálculo de jornada (por defecto: 8). |
 
-**Las credenciales de Jira** (URL, email y API token) no van en `.env`. Se configuran en la aplicación y se guardan en **localStorage** del navegador (y se envían al servidor vía cookies en cada petición).
+Hay dos formas de autenticarse:
 
-### 4. Obtener el API Token de Jira
+- **OAuth 2.0 (3LO)** — recomendado. El usuario hace login con su cuenta de Atlassian; los tokens viven en la sesión PHP (cookies HttpOnly).
+- **API token** — alternativa. La app pide email + token y los guarda en `localStorage` del navegador (y los envía al servidor vía cookies).
+
+### 4a. Configurar OAuth (recomendado)
+
+1. Entra en [developer.atlassian.com/console/myapps](https://developer.atlassian.com/console/myapps/) → **Create** → **OAuth 2.0 integration**.
+2. Pon nombre (ej: "Jira Batman Worklog") y crea la app.
+3. Menú lateral → **Permissions** → añade **Jira API** y configura los scopes:
+   - `read:me`, `read:jira-user`, `read:jira-work`, `write:jira-work`, `offline_access`.
+4. Menú lateral → **Authorization** → **Configure** junto a OAuth 2.0 (3LO):
+   - **Callback URL**: la misma que pongas en `JIRA_OAUTH_REDIRECT_URI` (ej: `http://localhost:8080/oauth/callback.php`).
+5. Menú lateral → **Settings** → copia **Client ID** y **Secret** y pégalos en `.env`.
+
+### 4b. Configurar API token (alternativa)
 
 1. Entra en [Atlassian Account Settings](https://id.atlassian.com/manage-profile/security/api-tokens).
-2. Inicia sesión con tu cuenta de Atlassian.
-3. Pulsa **Create API token**, pon un nombre (ej: "Batman Worklog") y copia el token.
-4. La primera vez que uses la app, abre **Configurar** y pega ahí la URL de Jira, tu email y el token. Se guardarán en localStorage.
+2. Pulsa **Create API token**, pon un nombre y copia el token.
+3. En la app, abre el modal **Configurar** y pega ahí tu email y el token.
 
 ### 5. Servidor web
 
@@ -61,7 +75,7 @@ Luego abre en el navegador: **http://localhost:8080**
 - **Nginx:** el `root` (o `alias`) debe apuntar a la carpeta `public` del proyecto. El resto de la aplicación (`.env`, `src/`, etc.) debe quedar fuera del document root por seguridad.
 - **Apache:** crea un `VirtualHost` cuyo `DocumentRoot` sea la ruta a `public` y, si usas mod_rewrite, asegúrate de que `public/.htaccess` (si existe) redirija las peticiones a `index.php`.
 
-Ejemplo mínimo Nginx:
+Ejemplo mínimo Nginx (app en raíz del dominio):
 
 ```nginx
 server {
@@ -80,6 +94,46 @@ server {
 }
 ```
 
+**App en subdirectorio (ej: `/jira-batman/`)**
+
+Si despliegas en un subdirectorio y registraste el callback OAuth sin `.php`
+(ej. `https://tu-dominio.com/jira-batman/oauth/callback`), añade una regla
+de reescritura para mapear `/oauth/callback` → `/oauth/callback.php`:
+
+```nginx
+location /jira-batman/ {
+    alias /ruta/completa/jira-batman/public/;
+    try_files $uri $uri/ /jira-batman/index.php?$query_string;
+
+    # Permitir callback OAuth sin extensión .php
+    location = /jira-batman/oauth/callback {
+        rewrite ^ /jira-batman/oauth/callback.php last;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.0-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $request_filename;
+        include fastcgi_params;
+    }
+}
+```
+
+Y en `.env`:
+
+```
+APP_BASE_URL=/jira-batman/
+JIRA_OAUTH_REDIRECT_URI=https://tu-dominio.com/jira-batman/oauth/callback
+```
+
+**Importante sobre los callbacks de Atlassian**
+
+En [Developer Console](https://developer.atlassian.com/console/myapps/) → tu app → **Authorization** → **Callback URL**, registra **todas** las URLs que vayas a usar (Atlassian admite varias):
+
+- Local: `http://localhost:8080/oauth/callback.php`
+- Prod: `https://tu-dominio.com/jira-batman/oauth/callback`
+
+El valor de `JIRA_OAUTH_REDIRECT_URI` en cada `.env` debe coincidir **exactamente** con la URL registrada para ese entorno.
+
 ## Uso
 
 1. Abre en el navegador la URL donde está desplegada la app (ej: `http://localhost:8080` o tu dominio).
@@ -97,22 +151,29 @@ server {
 ```
 jira-batman/
 ├── public/
-│   └── index.php      # Entrada web
+│   ├── index.php           # Entrada web
+│   └── oauth/
+│       ├── login.php       # Inicia el flujo OAuth
+│       ├── callback.php    # Recibe el code y guarda tokens en sesión
+│       └── logout.php      # Cierra la sesión OAuth
 ├── src/
-│   ├── JiraClient.php # Cliente API Jira
+│   ├── AuthSession.php     # Manejo de sesión PHP (tokens, CSRF, refresh)
+│   ├── JiraClient.php      # Cliente API Jira (Bearer y Basic)
+│   ├── OAuthClient.php     # Flujo OAuth 2.0 (3LO) de Atlassian
 │   └── WorklogReport.php
 ├── templates/
-│   └── report.php     # Vista del reporte
+│   └── report.php          # Vista del reporte
 ├── .env.example
-├── .env               # No commitear (en .gitignore)
+├── .env                    # No commitear (en .gitignore)
 ├── composer.json
 └── README.md
 ```
 
 ## Seguridad
 
-- Las credenciales viven en **localStorage** del navegador (no en `.env`). El servidor las recibe vía cookies en cada petición.
+- **OAuth**: los tokens viven en `$_SESSION` (cookie HttpOnly + Secure si HTTPS). Nunca llegan al navegador. El refresh token se rota automáticamente en cada uso.
+- **API token**: el token vive en `localStorage` del navegador y se envía vía cookies. Más expuesto a XSS — preferir OAuth si es posible.
 - No expongas la carpeta raíz del proyecto como document root; solo `public/`.
-- El API token tiene los mismos permisos que tu usuario en Jira; no lo compartas.
+- El API token y los tokens OAuth tienen los mismos permisos que tu usuario en Jira; no los compartas.
 
 

@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -l src/JiraClient.php)",
+      "Bash(php -l src/OAuthClient.php)",
+      "Bash(php -l src/AuthSession.php)",
+      "Bash(php -l public/index.php)",
+      "Bash(php -l public/oauth/login.php)",
+      "Bash(composer dump-autoload *)",
+      "Bash(php *)",
+      "Bash(curl -sS -o /tmp/jira-batman-test.html -w \"HTTP %{http_code} | size=%{size_download}\\\\n\" http://localhost:8089/)",
+      "Read(//tmp/**)",
+      "Bash(curl -sS -w \"\\\\nHTTP %{http_code}\\\\n\" http://localhost:8089/oauth/login.php)",
+      "Bash(curl -sS -w \"\\\\nHTTP %{http_code}\\\\n\" http://localhost:8089/oauth/callback.php)",
+      "Bash(curl -sS -I http://localhost:8089/oauth/logout.php)",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"php -S localhost:8089\")",
+      "Bash(curl -sS -o /dev/null -w \"HTTP: %{http_code}\\\\nLocation: %{redirect_url}\\\\n\" http://localhost:8089/oauth/login.php)",
+      "Bash(curl -sS http://localhost:8089/)",
+      "Bash(SSHPASS='M0F!DPz8CsVM' sshpass *)",
+      "Bash(sshpass -e rsync -avz --delete --exclude .env --exclude vendor/ --exclude .git/ --exclude .claude/ --exclude '*.bak*' --exclude .DS_Store -e 'ssh -o StrictHostKeyChecking=accept-new' --dry-run ./ jojurdi@e-cfdi.com:/home/jojurdi/jira-batman/)",
+      "Bash(sshpass -e rsync -avz --delete --exclude .env --exclude vendor/ --exclude .git/ --exclude .claude/ --exclude '*.bak*' --exclude .DS_Store -e 'ssh -o StrictHostKeyChecking=accept-new' ./ jojurdi@e-cfdi.com:/home/jojurdi/jira-batman/)",
+      "Bash(curl -sS -o /dev/null -w \"HTTP %{http_code}\\\\nLocation: %{redirect_url}\\\\n\" https://jojurdi.com/jira-batman/oauth/login.php)",
+      "Bash(curl -sS -w \"\\\\nHTTP %{http_code}\\\\n\" \"https://jojurdi.com/jira-batman/oauth/callback\" -o /tmp/cb-test.html)",
+      "Bash(curl -sS -w \"\\\\nHTTP %{http_code}\\\\n\" \"https://jojurdi.com/jira-batman/oauth/callback.php\" -o /tmp/cb-test2.html)",
+      "Bash(chmod +x deploy.sh)",
+      "Bash(bash -n deploy.sh)",
+      "Bash(chmod 600 .deploy_password)",
+      "Bash(./deploy.sh --dry-run)",
+      "Bash(./deploy.sh --skip-backup)",
+      "Bash(./deploy.sh)"
+    ]
+  }
+}

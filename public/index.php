@@ -2,7 +2,9 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+use App\AuthSession;
 use App\JiraClient;
+use App\OAuthClient;
 use App\WorklogReport;
 use Dotenv\Dotenv;
 
@@ -13,15 +15,45 @@ $timezone = $_ENV['TIMEZONE'] ?? 'America/Mexico_City';
 $hoursPerDay = (float) ($_ENV['HOURS_PER_DAY'] ?? 8);
 date_default_timezone_set($timezone);
 
-$jiraBaseUrl = 'https://sibamex.atlassian.net';
+$jiraBaseUrlConfig = rtrim($_ENV['JIRA_BASE_URL'] ?? 'https://sibamex.atlassian.net', '/');
+$oauthAvailable = OAuthClient::isConfigured();
 
+AuthSession::start();
+
+// Resolver método de autenticación: OAuth tiene prioridad si hay sesión.
+$authMethod = null;
+$client = null;
+$jiraBaseUrl = $jiraBaseUrlConfig;
+$oauthSession = null;
+
+if ($oauthAvailable && AuthSession::getOAuth()) {
+    try {
+        $oauth = OAuthClient::fromEnv();
+        if (AuthSession::ensureFreshAccessToken($oauth)) {
+            $oauthSession = AuthSession::getOAuth();
+            $client = JiraClient::fromOAuth($oauthSession['cloud_id'], $oauthSession['access_token']);
+            $jiraBaseUrl = $oauthSession['cloud_url'] ?: $jiraBaseUrlConfig;
+            $authMethod = 'oauth';
+        }
+    } catch (\Throwable $e) {
+        $authMethod = null;
+    }
+}
+
+// Fallback: cookies/env con email + API token
 $cookieEmail = isset($_COOKIE['jira_email']) && $_COOKIE['jira_email'] !== '' ? $_COOKIE['jira_email'] : null;
 $cookieToken = isset($_COOKIE['jira_token']) && $_COOKIE['jira_token'] !== '' ? $_COOKIE['jira_token'] : null;
-
 $jiraEmail = $cookieEmail ?? ($_ENV['JIRA_EMAIL'] ?? '');
 $jiraToken = $cookieToken ?? ($_ENV['JIRA_API_TOKEN'] ?? '');
 $hasToken = !empty($jiraToken);
-$needsSetup = empty($jiraEmail) || empty($jiraToken);
+
+if (!$client && !empty($jiraEmail) && !empty($jiraToken)) {
+    $client = JiraClient::fromBasic($jiraBaseUrlConfig, $jiraEmail, $jiraToken);
+    $jiraBaseUrl = $jiraBaseUrlConfig;
+    $authMethod = 'basic';
+}
+
+$needsSetup = $client === null;
 
 $rangeType = $_GET['range'] ?? 'month';
 $customStart = $_GET['start'] ?? null;
@@ -59,7 +91,6 @@ $displayName = '';
 
 if (!$needsSetup) {
     try {
-        $client = new JiraClient($jiraBaseUrl, $jiraEmail, $jiraToken);
         $worklogReport = new WorklogReport($client, $timezone, $hoursPerDay);
         $displayName = $worklogReport->getAccountDisplayName();
         $report = $worklogReport->generate($startDate, $endDate);
@@ -79,7 +110,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $action = $body['action'] ?? '';
     try {
-        $client = new JiraClient($jiraBaseUrl, $jiraEmail, $jiraToken);
         if ($action === 'add_worklog') {
             $issueKey = strtoupper(trim($body['issueKey'] ?? ''));
             $date     = $body['date'] ?? '';
