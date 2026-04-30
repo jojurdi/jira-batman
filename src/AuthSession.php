@@ -133,6 +133,50 @@ class AuthSession
     }
 
     /**
+     * Cache en sesión del /myself con TTL. Evita una request por cada carga.
+     */
+    public static function cachedMyself(JiraClient $client, int $ttlSeconds = 3600): array
+    {
+        $cached = $_SESSION['cached_me'] ?? null;
+        if (is_array($cached) && (time() - ($cached['ts'] ?? 0)) < $ttlSeconds) {
+            return $cached['data'];
+        }
+        $me = $client->getMyself();
+        $_SESSION['cached_me'] = ['ts' => time(), 'data' => $me];
+        return $me;
+    }
+
+    public static function clearMyselfCache(): void
+    {
+        unset($_SESSION['cached_me']);
+    }
+
+    /**
+     * Cache de reporte por (startDate, endDate). Devuelve la copia cacheada
+     * si está fresca, si no llama a $generator y la guarda.
+     */
+    public static function cachedReport(string $cacheKey, int $ttlSeconds, callable $generator): array
+    {
+        $cached = $_SESSION['report_cache'][$cacheKey] ?? null;
+        if (is_array($cached) && (time() - ($cached['ts'] ?? 0)) < $ttlSeconds) {
+            return $cached['data'];
+        }
+        $data = $generator();
+        $_SESSION['report_cache'][$cacheKey] = ['ts' => time(), 'data' => $data];
+        // Mantener solo los últimos 5 reportes en sesión.
+        if (isset($_SESSION['report_cache']) && count($_SESSION['report_cache']) > 5) {
+            uasort($_SESSION['report_cache'], fn($a, $b) => ($b['ts'] ?? 0) <=> ($a['ts'] ?? 0));
+            $_SESSION['report_cache'] = array_slice($_SESSION['report_cache'], 0, 5, true);
+        }
+        return $data;
+    }
+
+    public static function clearReportCache(): void
+    {
+        unset($_SESSION['report_cache']);
+    }
+
+    /**
      * Destruye la sesión completa (logout).
      */
     public static function destroy(): void

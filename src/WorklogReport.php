@@ -8,21 +8,105 @@ class WorklogReport
     private string $timezone;
     private float $hoursPerDay;
     private string $accountId;
+    private array $me;
 
-    public function __construct(JiraClient $client, string $timezone, float $hoursPerDay = 8.0)
+    public function __construct(JiraClient $client, string $timezone, float $hoursPerDay = 8.0, ?array $me = null)
     {
         $this->client = $client;
         $this->timezone = $timezone;
         $this->hoursPerDay = $hoursPerDay;
 
-        $me = $this->client->getMyself();
-        $this->accountId = $me['accountId'];
+        $this->me = $me ?? $this->client->getMyself();
+        $this->accountId = $this->me['accountId'];
     }
 
     public function getAccountDisplayName(): string
     {
-        $me = $this->client->getMyself();
-        return $me['displayName'] ?? 'Desconocido';
+        return $this->me['displayName'] ?? 'Desconocido';
+    }
+
+    /**
+     * Resuelve worklogs para muchos issues:
+     *  - Si el field worklog del search trae la lista completa: la usa directamente.
+     *  - Para los que faltan, hace 1 batch request en paralelo (curl_multi).
+     *
+     * @param array $issues issues tal como vienen de searchIssues
+     * @return array<string, array> map issueKey => array de worklogs (sin filtrar por autor)
+     */
+    private function resolveWorklogsBatch(array $issues): array
+    {
+        $byKey = [];
+        $missing = [];
+        foreach ($issues as $issue) {
+            $key = $issue['key'];
+            $worklogField = $issue['fields']['worklog'] ?? null;
+            if ($worklogField !== null) {
+                $total = (int) ($worklogField['total'] ?? 0);
+                $max   = (int) ($worklogField['maxResults'] ?? 0);
+                $list  = $worklogField['worklogs'] ?? [];
+                if ($total <= $max && $total === count($list)) {
+                    $byKey[$key] = $list;
+                    continue;
+                }
+            }
+            $missing[] = $key;
+        }
+
+        if (!empty($missing)) {
+            $batch = $this->client->getMultipleIssueWorklogs($missing);
+            foreach ($missing as $key) {
+                $byKey[$key] = $batch[$key]['worklogs'] ?? [];
+            }
+        }
+
+        return $byKey;
+    }
+
+    private function filterMyWorklogs(array $worklogs): array
+    {
+        $out = [];
+        foreach ($worklogs as $wl) {
+            if (($wl['author']['accountId'] ?? '') === $this->accountId) {
+                $out[] = $wl;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Total de horas logueadas en un rango. Más liviano que generate() —
+     * útil para comparativas con periodos anteriores.
+     */
+    public function getPeriodTotalHours(string $startDate, string $endDate): float
+    {
+        $jql = sprintf(
+            'worklogAuthor = currentUser() AND worklogDate >= "%s" AND worklogDate <= "%s"',
+            $startDate,
+            $endDate
+        );
+        $searchResult = $this->client->searchIssues($jql, 100, 'summary,worklog');
+        $issues = $searchResult['issues'] ?? [];
+
+        $tz = new \DateTimeZone($this->timezone);
+        $start = new \DateTime($startDate, $tz);
+        $end   = new \DateTime($endDate, $tz);
+        $end->setTime(23, 59, 59);
+
+        $worklogsByKey = $this->resolveWorklogsBatch($issues);
+
+        $totalSeconds = 0;
+        foreach ($issues as $issue) {
+            $worklogs = $this->filterMyWorklogs($worklogsByKey[$issue['key']] ?? []);
+            foreach ($worklogs as $wl) {
+                $started = new \DateTime($wl['started']);
+                $started->setTimezone($tz);
+                if ($started < $start || $started > $end) {
+                    continue;
+                }
+                $totalSeconds += (int) ($wl['timeSpentSeconds'] ?? 0);
+            }
+        }
+        return round($totalSeconds / 3600, 2);
     }
 
     /**
@@ -91,20 +175,17 @@ class WorklogReport
             }
         }
 
+        $worklogsByKey = $this->resolveWorklogsBatch($issues);
+
         foreach ($issues as $issue) {
             $issueKey = $issue['key'];
             $summary = $issue['fields']['summary'] ?? '';
             $status = $issue['fields']['status']['name'] ?? '';
             $project = $issue['fields']['project']['name'] ?? '';
 
-            $worklogData = $this->client->getIssueWorklogs($issueKey);
-            $worklogs = $worklogData['worklogs'] ?? [];
+            $worklogs = $this->filterMyWorklogs($worklogsByKey[$issueKey] ?? []);
 
             foreach ($worklogs as $wl) {
-                if (($wl['author']['accountId'] ?? '') !== $this->accountId) {
-                    continue;
-                }
-
                 $started = new \DateTime($wl['started']);
                 $started->setTimezone($tz);
                 $dayKey = $started->format('Y-m-d');
@@ -271,6 +352,23 @@ class WorklogReport
             $matrixFinal[]     = $row;
         }
 
+        // Total por proyecto.
+        $byProject = [];
+        foreach ($issueMap as $iss) {
+            $name = $iss['project'] ?: 'Sin proyecto';
+            if (!isset($byProject[$name])) {
+                $byProject[$name] = ['name' => $name, 'totalSeconds' => 0];
+            }
+            $byProject[$name]['totalSeconds'] += $iss['totalSeconds'];
+        }
+        $byProjectFinal = [];
+        foreach ($byProject as $p) {
+            $p['totalHours']  = round($p['totalSeconds'] / 3600, 2);
+            $p['percent']     = $totalLogged > 0 ? round($p['totalHours'] / $totalLogged * 100, 1) : 0;
+            $byProjectFinal[] = $p;
+        }
+        usort($byProjectFinal, fn($a, $b) => $b['totalSeconds'] - $a['totalSeconds']);
+
         // Amortizable: tareas cuya épica tiene iniciativa padre.
         // No amortizable: el resto (sin épica, o épica sin iniciativa).
         $amortizableSeconds = 0;
@@ -303,9 +401,12 @@ class WorklogReport
             'initiatives' => $amortizableInitiatives,
         ];
 
+        $avgDailyHours = $workDays > 0 ? round($totalLogged / $workDays, 2) : 0;
+
         return [
             'days'         => array_values($dayMap),
             'byHierarchy'  => $byHierarchy,
+            'byProject'    => $byProjectFinal,
             'amortization' => $amortization,
             'matrix'      => [
                 'dates'      => $matrixDates,
@@ -321,6 +422,7 @@ class WorklogReport
                 'totalExpected' => $totalExpected,
                 'totalRemaining' => max(0, round($totalExpected - $totalLogged, 2)),
                 'totalOvertime' => max(0, round($totalLogged - $totalExpected, 2)),
+                'avgDailyHours' => $avgDailyHours,
                 'completionPercent' => $totalExpected > 0
                     ? round(($totalLogged / $totalExpected) * 100, 1)
                     : 0,

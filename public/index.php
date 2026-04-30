@@ -93,13 +93,20 @@ $displayName = '';
 
 if (!$needsSetup) {
     try {
-        $worklogReport = new WorklogReport($client, $timezone, $hoursPerDay);
+        $cachedMe = AuthSession::cachedMyself($client);
+        $worklogReport = new WorklogReport($client, $timezone, $hoursPerDay, $cachedMe);
         $displayName = $worklogReport->getAccountDisplayName();
-        $report = $worklogReport->generate($startDate, $endDate);
+
+        $cacheKey = "{$startDate}__{$endDate}__" . ($cachedMe['accountId'] ?? '');
+        $cacheTtl = (int) ($_GET['nocache'] ?? 0) === 1 ? 0 : 90;
+        $report = AuthSession::cachedReport($cacheKey, $cacheTtl, function() use ($worklogReport, $startDate, $endDate) {
+            return $worklogReport->generate($startDate, $endDate);
+        });
     } catch (\Throwable $e) {
         if (in_array($e->getCode(), [401, 403], true)) {
             $authError = true;
             $authErrorMethod = $authMethod;
+            AuthSession::clearMyselfCache();
             // Si fue OAuth, el token está revocado o expiró sin refresh válido: limpiar.
             if ($authMethod === 'oauth') {
                 AuthSession::clearOAuth();
@@ -113,6 +120,32 @@ if (!$needsSetup) {
     }
 }
 
+// CSV export
+if (!$needsSetup && ($_GET['export'] ?? '') === 'csv' && $report) {
+    $filename = 'worklog_' . $startDate . '_' . $endDate . '.csv';
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    $out = fopen('php://output', 'w');
+    fwrite($out, "\xEF\xBB\xBF"); // BOM para Excel
+    fputcsv($out, ['Fecha', 'Día', 'Clave', 'Proyecto', 'Tarea', 'Estado', 'Inicio', 'Horas']);
+    foreach ($report['days'] as $day) {
+        foreach ($day['worklogs'] as $wl) {
+            fputcsv($out, [
+                $day['date'],
+                $day['dayName'],
+                $wl['issueKey'],
+                $wl['project'],
+                $wl['summary'],
+                $wl['status'],
+                $wl['started'],
+                round($wl['timeSpentSeconds'] / 3600, 2),
+            ]);
+        }
+    }
+    fclose($out);
+    exit;
+}
+
 // Manejar peticiones AJAX POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
@@ -124,6 +157,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $action = $body['action'] ?? '';
     try {
+        if ($action === 'compare') {
+            $cmpStart = $body['startDate'] ?? '';
+            $cmpEnd   = $body['endDate']   ?? '';
+            $cmpCurrent = (float) ($body['currentTotal'] ?? 0);
+            if (!$cmpStart || !$cmpEnd) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Faltan startDate/endDate']);
+                exit;
+            }
+            try {
+                $rangeDays = (new DateTime($cmpEnd))->diff(new DateTime($cmpStart))->days + 1;
+                $prevEnd   = (new DateTime($cmpStart, new DateTimeZone($timezone)))->modify('-1 day');
+                $prevStart = (clone $prevEnd)->modify('-' . ($rangeDays - 1) . ' days');
+                $cachedMe = AuthSession::cachedMyself($client);
+                $report = new WorklogReport($client, $timezone, $hoursPerDay, $cachedMe);
+                $prevTotal = $report->getPeriodTotalHours(
+                    $prevStart->format('Y-m-d'),
+                    $prevEnd->format('Y-m-d')
+                );
+                echo json_encode([
+                    'ok' => true,
+                    'previousLogged' => $prevTotal,
+                    'delta' => round($cmpCurrent - $prevTotal, 2),
+                ]);
+            } catch (\Throwable $e) {
+                http_response_code(500);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+            exit;
+        }
+        if ($action === 'list_assigned') {
+            $issues = $client->getMyAssignedIssues(30);
+            $out = [];
+            foreach ($issues as $iss) {
+                $out[] = [
+                    'key'       => $iss['key'],
+                    'summary'   => $iss['fields']['summary']        ?? '',
+                    'status'    => $iss['fields']['status']['name'] ?? '',
+                    'project'   => $iss['fields']['project']['name'] ?? '',
+                    'issuetype' => $iss['fields']['issuetype']['name'] ?? '',
+                    'priority'  => $iss['fields']['priority']['name'] ?? '',
+                ];
+            }
+            echo json_encode(['ok' => true, 'issues' => $out]);
+            exit;
+        }
+        if ($action === 'create_subtask') {
+            $parentKey   = strtoupper(trim($body['parentKey'] ?? ''));
+            $summary     = trim($body['summary'] ?? '');
+            $description = trim($body['description'] ?? '');
+            if (!$parentKey || !$summary) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Faltan parentKey o summary']);
+                exit;
+            }
+            $cachedMe = AuthSession::cachedMyself($client);
+            $accountId = $cachedMe['accountId'] ?? null;
+            $result = $client->createSubtaskAndTransition($parentKey, $summary, $description ?: null, $accountId);
+            echo json_encode([
+                'ok'             => true,
+                'key'            => $result['key'],
+                'transitionName' => $result['transition']['name'] ?? null,
+                'transitionFailed' => isset($result['transition']['error']),
+            ]);
+            exit;
+        }
+        if ($action === 'pick_issue') {
+            $query = trim($body['query'] ?? '');
+            if ($query === '') {
+                echo json_encode(['ok' => true, 'issues' => []]);
+                exit;
+            }
+            [$issues, $debug] = $client->pickIssuesWithDebug($query, 8);
+            echo json_encode(['ok' => true, 'issues' => $issues, '_debug' => $debug]);
+            exit;
+        }
         if ($action === 'add_worklog') {
             $issueKey = strtoupper(trim($body['issueKey'] ?? ''));
             $date     = $body['date'] ?? '';
@@ -154,6 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $wlResult = $client->addWorklog($issueKey, $started, $seconds);
             $issue    = $client->getIssue($issueKey);
+            AuthSession::clearReportCache();
             echo json_encode([
                 'ok'        => true,
                 'worklogId' => $wlResult['id'] ?? '',
@@ -193,6 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $started = $dt->format('Y-m-d\TH:i:s.000O');
 
             $client->updateWorklog($issueKey, $worklogId, $started, $seconds);
+            AuthSession::clearReportCache();
             echo json_encode(['ok' => true]);
             exit;
         }
@@ -207,6 +318,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $client->deleteWorklog($issueKey, $worklogId);
+            AuthSession::clearReportCache();
             echo json_encode(['ok' => true]);
             exit;
         }

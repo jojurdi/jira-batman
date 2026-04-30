@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="<?= htmlspecialchars(\App\AuthSession::appBaseUrl()) ?>">
     <title>Jira Batman</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 96' fill='%231a1a1a'><path d='M128 4c-3 9-7 17-12 24-5-3-11-3-16-1-3-7-7-13-12-19-3 7-6 14-9 21-12-6-26-7-39-2-12 4-22 12-31 21 13-2 26-2 38 3 12 5 22 14 28 26 7-9 18-13 30-12 6 9 12 18 18 28 1 1 3 1 4 0 6-10 12-19 18-28 12-1 23 3 30 12 6-12 16-21 28-26 12-5 25-5 38-3-9-9-19-17-31-21-13-5-27-4-39 2-3-7-6-14-9-21-5 6-9 12-12 19-5-2-11-2-16 1-5-7-9-15-12-24z'/></svg>">
     <style>
         :root {
             --color-bg: #ffffff;
@@ -24,6 +25,28 @@
             --color-warning-bg: #fff7e6;
             --color-danger: #de350b;
             --color-danger-bg: #ffebe6;
+        }
+
+        [data-theme="dark"] {
+            --color-bg: #1e2128;
+            --color-bg-alt: #1a1d24;
+            --color-bg-subtle: #262a32;
+            --color-border: #353a44;
+            --color-border-strong: #4a505b;
+            --color-text: #e6e8ec;
+            --color-text-muted: #a0a8b3;
+            --color-text-subtle: #6b778c;
+            --color-primary: #4c9aff;
+            --color-primary-hover: #79b1ff;
+            --color-primary-bg: #1a3a6e;
+            --color-success: #36b37e;
+            --color-success-bg: #1a3a2c;
+            --color-warning: #ffab00;
+            --color-warning-bg: #3d2e0e;
+            --color-danger: #ff5630;
+            --color-danger-bg: #3d1c14;
+        }
+        :root {
             --space-1: 0.25rem;
             --space-2: 0.5rem;
             --space-3: 0.75rem;
@@ -68,7 +91,13 @@
         }
 
         .logo-group { display: flex; align-items: center; gap: var(--space-3); }
-        .logo-group svg { width: 30px; height: 18px; color: var(--color-text); }
+        .logo-group svg {
+            width: 42px;
+            height: auto;
+            color: var(--color-text);
+            transition: transform var(--t-default);
+        }
+        .logo-group:hover svg { transform: scale(1.08); }
         header h1 { font-size: 1.05rem; font-weight: 600; color: var(--color-text); letter-spacing: -0.01em; }
 
         .header-right {
@@ -180,9 +209,101 @@
             margin: 0 4px;
         }
 
+        .filterbar {
+            display: flex;
+            gap: var(--space-2);
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: var(--space-4);
+            padding: var(--space-2) var(--space-3);
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+        .filterbar-search {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            padding: 4px 10px;
+            min-width: 220px;
+            flex: 1;
+            color: var(--color-text-subtle);
+            transition: all var(--t-fast);
+        }
+        .filterbar-search:focus-within {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px var(--color-primary-bg);
+            color: var(--color-primary);
+        }
+        .filterbar-search input {
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 0.85rem;
+            font-family: inherit;
+            color: var(--color-text);
+            width: 100%;
+            padding: 4px 0;
+        }
+        .filterbar-search input::placeholder { color: var(--color-text-subtle); }
+
+        .select-filter {
+            padding: 6px 24px 6px 10px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-size: 0.82rem;
+            font-family: inherit;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%236b778c' d='M5 6L0 0h10z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            transition: all var(--t-fast);
+            max-width: 220px;
+        }
+        .select-filter:hover { border-color: var(--color-border-strong); }
+        .select-filter:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-bg); }
+        .select-filter.has-value { background-color: var(--color-primary-bg); color: var(--color-primary); border-color: var(--color-primary); font-weight: 500; }
+
+        .filter-count {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            font-feature-settings: "tnum";
+        }
+        .filter-count[hidden] { display: none; }
+
+        .hr-day-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background: var(--color-bg);
+            font-size: 0.8rem;
+            color: var(--color-text-subtle);
+            user-select: none;
+            cursor: pointer;
+        }
+        .hr-day-label {
+            cursor: pointer;
+            padding: 0 4px;
+            font-weight: 500;
+            transition: color var(--t-fast);
+        }
+        .hr-day-label:hover { color: var(--color-text); }
+        .hr-day-label.active { color: var(--color-primary); font-weight: 700; }
+        .hr-day-sep { color: var(--color-border); }
+
         .summary {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 0;
             margin-bottom: var(--space-5);
             background: var(--color-bg);
@@ -218,6 +339,169 @@
         .summary-value.ok { color: var(--color-success); }
         .summary-value.pending { color: var(--color-warning); }
         .summary-value.missing { color: var(--color-danger); }
+
+        .summary-delta {
+            font-size: 0.72rem;
+            color: var(--color-text-subtle);
+            margin-top: 4px;
+            font-feature-settings: "tnum";
+        }
+        .summary-delta.up   { color: var(--color-success); }
+        .summary-delta.down { color: var(--color-warning); }
+        .summary-delta.loading {
+            color: var(--color-text-subtle);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            opacity: 0.7;
+        }
+
+        .heatmap-section {
+            margin-bottom: var(--space-5);
+            padding: var(--space-4);
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+        .heatmap-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-3);
+        }
+        .heatmap-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--color-text-subtle);
+            font-weight: 600;
+        }
+        .heatmap-legend {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.72rem;
+        }
+        .heatmap-wrap {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+        }
+        .heatmap-rows-labels {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding-top: 1px;
+            font-size: 0.65rem;
+            color: var(--color-text-subtle);
+            line-height: 14px;
+        }
+        .heatmap-rows-labels span {
+            height: 14px;
+            text-align: center;
+            font-weight: 500;
+        }
+        .heatmap-grid {
+            display: flex;
+            gap: 3px;
+        }
+        .heatmap-col {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .heatmap-cell {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            background: var(--color-bg-subtle);
+            transition: transform var(--t-fast);
+            display: inline-block;
+        }
+        .heatmap-cell:hover {
+            transform: scale(1.3);
+            box-shadow: 0 0 0 1px var(--color-border-strong);
+        }
+        .heatmap-cell.empty { background: transparent; }
+        .heatmap-cell.h0 { background: var(--color-bg-subtle); }
+        .heatmap-cell.h1 { background: #c6e9d3; }
+        .heatmap-cell.h2 { background: #84d6a4; }
+        .heatmap-cell.h3 { background: #38b878; }
+        .heatmap-cell.h4 { background: var(--color-success); }
+        .heatmap-cell.h5 { background: var(--color-warning); }
+        .heatmap-cell.weekend { opacity: 0.55; }
+
+        .byproject-section {
+            margin-bottom: var(--space-5);
+            padding: var(--space-4);
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+        .byproject-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: var(--space-3);
+        }
+        .byproject-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--color-text-subtle);
+            font-weight: 600;
+        }
+        .byproject-count {
+            font-size: 0.78rem;
+            color: var(--color-text-muted);
+        }
+        .byproject-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .byproject-row {
+            display: grid;
+            grid-template-columns: minmax(120px, 1.3fr) 2fr auto auto;
+            gap: var(--space-3);
+            align-items: center;
+            font-size: 0.85rem;
+        }
+        .byproject-name {
+            color: var(--color-text);
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .byproject-bar {
+            height: 6px;
+            background: var(--color-bg-subtle);
+            border-radius: var(--radius-pill);
+            overflow: hidden;
+        }
+        .byproject-fill {
+            height: 100%;
+            background: var(--color-primary);
+            border-radius: var(--radius-pill);
+            transition: width var(--t-default);
+        }
+        .byproject-hours {
+            font-feature-settings: "tnum";
+            color: var(--color-text);
+            font-weight: 600;
+            text-align: right;
+            min-width: 50px;
+        }
+        .byproject-pct {
+            font-size: 0.78rem;
+            color: var(--color-text-subtle);
+            font-feature-settings: "tnum";
+            min-width: 38px;
+            text-align: right;
+        }
 
         .amort-section {
             margin-bottom: var(--space-5);
@@ -596,6 +880,270 @@
         }
         @keyframes spin { to { transform: rotate(360deg) } }
 
+        .dialog-close {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            color: var(--color-text-subtle);
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            transition: all var(--t-fast);
+        }
+        .dialog-close:hover { background: var(--color-bg-subtle); color: var(--color-text); }
+
+        .form-error {
+            margin-top: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            background: var(--color-danger-bg);
+            color: #bf2600;
+            border-radius: var(--radius-sm);
+            font-size: 0.78rem;
+            border-left: 3px solid var(--color-danger);
+        }
+        .form-error[hidden] { display: none; }
+
+        .field-hint {
+            margin-top: 4px;
+            padding: 6px 10px;
+            background: var(--color-primary-bg);
+            color: var(--color-primary);
+            border-radius: var(--radius-sm);
+            font-size: 0.78rem;
+        }
+        .field-hint[hidden] { display: none; }
+
+        .duration-chips {
+            display: flex;
+            gap: 6px;
+            margin-top: var(--space-2);
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            border: 1px solid var(--color-border);
+            background: var(--color-bg);
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            font-family: inherit;
+            transition: all var(--t-fast);
+        }
+        .chip:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            background: var(--color-primary-bg);
+        }
+        .chip.active {
+            border-color: var(--color-primary);
+            background: var(--color-primary);
+            color: #fff;
+        }
+        .chip.chip-rest { font-style: italic; }
+
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 4px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            max-height: 280px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+        .suggestions[hidden] { display: none; }
+
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            border-bottom: 1px solid var(--color-border);
+            transition: background var(--t-fast);
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover, .suggestion-item.active {
+            background: var(--color-primary-bg);
+        }
+        .suggestion-key {
+            font-weight: 600;
+            color: var(--color-primary);
+            font-feature-settings: "tnum";
+            font-size: 0.82rem;
+            white-space: nowrap;
+        }
+        .suggestion-summary {
+            color: var(--color-text);
+            font-size: 0.85rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+        .suggestion-project {
+            font-size: 0.72rem;
+            color: var(--color-text-subtle);
+            white-space: nowrap;
+        }
+        .suggestion-empty {
+            padding: 12px;
+            text-align: center;
+            color: var(--color-text-subtle);
+            font-size: 0.82rem;
+        }
+
+        .kbd-hint {
+            font-size: 0.72rem;
+            color: var(--color-text-subtle);
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+        }
+
+        .theme-toggle {
+            display: flex;
+            gap: 4px;
+            background: var(--color-bg-subtle);
+            padding: 4px;
+            border-radius: var(--radius-md);
+        }
+        .theme-btn {
+            flex: 1;
+            padding: 6px 10px;
+            border: none;
+            background: transparent;
+            border-radius: var(--radius-sm);
+            font-size: 0.78rem;
+            font-family: inherit;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all var(--t-fast);
+        }
+        .theme-btn:hover { color: var(--color-text); }
+        .theme-btn.active {
+            background: var(--color-bg);
+            color: var(--color-primary);
+            box-shadow: var(--shadow-sm);
+            font-weight: 600;
+        }
+
+        .mt-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        .mt-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3);
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            transition: all var(--t-fast);
+        }
+        .mt-row:hover { border-color: var(--color-border-strong); box-shadow: var(--shadow-sm); }
+        .mt-row[hidden] { display: none; }
+        .mt-row-key {
+            font-weight: 600;
+            color: var(--color-primary);
+            font-feature-settings: "tnum";
+            white-space: nowrap;
+            text-decoration: none;
+        }
+        .mt-row-key:hover { text-decoration: underline; }
+        .mt-row-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .mt-row-summary {
+            color: var(--color-text);
+            font-weight: 500;
+            font-size: 0.88rem;
+            margin-bottom: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .mt-row-meta {
+            display: flex;
+            gap: var(--space-2);
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            align-items: center;
+        }
+        .mt-row-type {
+            font-weight: 500;
+            padding: 1px 6px;
+            border-radius: var(--radius-sm);
+            background: var(--color-bg-subtle);
+        }
+        .mt-row-type.bug { background: var(--color-danger-bg); color: var(--color-danger); }
+        .mt-row-type.story { background: var(--color-success-bg); color: var(--color-success); }
+        .mt-row-type.task { background: var(--color-primary-bg); color: var(--color-primary); }
+        .mt-row .btn-sm { flex-shrink: 0; }
+
+        .bug-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.78rem;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            user-select: none;
+        }
+        .bug-toggle input { margin-right: 4px; }
+
+        .parent-card {
+            padding: var(--space-3);
+            background: var(--color-bg-subtle);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+        }
+        .parent-card .key {
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        kbd {
+            display: inline-block;
+            padding: 1px 6px;
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+            font-size: 0.72rem;
+            color: var(--color-text);
+            background: var(--color-bg-subtle);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            box-shadow: 0 1px 0 var(--color-border-strong);
+            line-height: 1.4;
+        }
+
+        .help-shortcuts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+            font-size: 0.85rem;
+        }
+        .help-shortcuts dt {
+            color: var(--color-text-muted);
+        }
+        .help-shortcuts dd {
+            text-align: right;
+        }
+
         .setup-msg {
             text-align: center;
             max-width: 560px;
@@ -824,6 +1372,12 @@
             gap: 0;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            position: sticky;
+            top: 0;
+            background: var(--color-bg-alt);
+            z-index: 50;
+            padding-top: var(--space-2);
+            margin-top: calc(-1 * var(--space-2));
         }
 
         .tab-btn {
@@ -1027,7 +1581,9 @@ function jiraStatusClass(string $status): string {
      data-has-token="<?= $hasToken ? '1' : '0' ?>">
     <header>
         <div class="logo-group">
-            <svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg" fill="#1a1a1a"><path d="M150 10c-4 18-8 32-14 42-6 10-14 18-24 24l-10 6-14-30-16 22-24-12-38 48c20-10 38-16 56-16 12 0 22 3 30 8 8 6 16 14 22 26l4 8h2l2-4 4-8c6-12 14-20 22-26 8-5 18-8 30-8 18 0 36 6 56 16l-38-48-24 12-16-22-14 30-10-6c-10-6-18-14-24-24-6-10-10-24-14-42z"/></svg>
+            <svg viewBox="0 0 256 96" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-label="Batman">
+                <path d="M128 4c-3 9-7 17-12 24-5-3-11-3-16-1-3-7-7-13-12-19-3 7-6 14-9 21-12-6-26-7-39-2-12 4-22 12-31 21 13-2 26-2 38 3 12 5 22 14 28 26 7-9 18-13 30-12 6 9 12 18 18 28 1 1 3 1 4 0 6-10 12-19 18-28 12-1 23 3 30 12 6-12 16-21 28-26 12-5 25-5 38-3-9-9-19-17-31-21-13-5-27-4-39 2-3-7-6-14-9-21-5 6-9 12-12 19-5-2-11-2-16 1-5-7-9-15-12-24z"/>
+            </svg>
             <h1>Jira Batman</h1>
         </div>
         <div class="header-right">
@@ -1044,6 +1600,12 @@ function jiraStatusClass(string $status): string {
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M6 12.5a.5.5 0 01.5.5v.5a.5.5 0 00.5.5h6a.5.5 0 00.5-.5v-11a.5.5 0 00-.5-.5h-6a.5.5 0 00-.5.5V3a.5.5 0 01-1 0v-.5A1.5 1.5 0 016.5.5h6A1.5 1.5 0 0114 2v11.5a1.5 1.5 0 01-1.5 1.5h-6A1.5 1.5 0 015 13.5V13a.5.5 0 01.5-.5z"/><path d="M.146 8.354a.5.5 0 010-.708l3-3a.5.5 0 11.708.708L1.707 7.5H10.5a.5.5 0 010 1H1.707l2.147 2.146a.5.5 0 01-.708.708l-3-3z"/></svg>
                 </a>
             <?php endif; ?>
+            <button class="btn-settings" onclick="openMyTasks()" title="Mis tareas asignadas">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </button>
+            <button class="btn-settings" onclick="openHelp()" title="Atajos de teclado (?)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </button>
             <button class="btn-settings" onclick="openSettings()" title="Configuraci&oacute;n">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 100 6.492 3.246 3.246 0 000-6.492zM5.754 8a2.246 2.246 0 114.492 0 2.246 2.246 0 01-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 01-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 01-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 01.52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 011.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 011.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 01.52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 01-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 01-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 002.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 001.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 00-1.115 2.693l.16.291c.415.764-.421 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 00-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 00-2.692-1.115l-.292.16c-.764.415-1.6-.421-1.184-1.185l.159-.291A1.873 1.873 0 001.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 003.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 002.692-1.115l.094-.319z"/></svg>
             </button>
@@ -1160,22 +1722,52 @@ function jiraStatusClass(string $status): string {
         <?php endif; ?>
 
         <?php if ($report): ?>
-            <?php $s = $report['summary']; ?>
+            <?php
+            $s = $report['summary'];
+            // Recolectar opciones de filtros
+            $_filterProjects = [];
+            $_filterStatuses = [];
+            $_issueInitiative = [];
+            foreach ($report['days'] ?? [] as $_d) {
+                foreach ($_d['worklogs'] ?? [] as $_wl) {
+                    if ($_wl['project']) $_filterProjects[$_wl['project']] = true;
+                    if ($_wl['status'])  $_filterStatuses[$_wl['status']]   = true;
+                }
+            }
+            $_filterInitiatives = [];
+            foreach ($report['byHierarchy'] ?? [] as $_init) {
+                if (!empty($_init['key'])) {
+                    $_filterInitiatives[$_init['key']] = $_init['summary'];
+                }
+                foreach ($_init['epics'] ?? [] as $_ep) {
+                    foreach ($_ep['issues'] ?? [] as $_iss) {
+                        $_issueInitiative[$_iss['issueKey']] = $_init['key'] ?? '';
+                    }
+                }
+            }
+            ksort($_filterProjects);
+            ksort($_filterStatuses);
+            asort($_filterInitiatives);
+            ?>
             <div class="summary">
                 <div class="summary-item">
                     <div class="summary-label">Registradas</div>
-                    <div class="summary-value"><?= $s['totalLogged'] ?>h</div>
+                    <div class="summary-value" data-hours="<?= $s['totalLogged'] ?>"><?= $s['totalLogged'] ?>h</div>
+                    <div class="summary-delta loading" id="delta-placeholder" data-current="<?= $s['totalLogged'] ?>" data-start="<?= htmlspecialchars($startDate) ?>" data-end="<?= htmlspecialchars($endDate) ?>">
+                        <span class="spinner" style="width:8px;height:8px;border-width:1px;"></span>
+                        Calculando vs. anterior…
+                    </div>
                     <div class="progress-track">
                         <div class="progress-track-fill" style="width: <?= min(100, $s['completionPercent']) ?>%;"></div>
                     </div>
                 </div>
                 <div class="summary-item">
                     <div class="summary-label">Esperadas</div>
-                    <div class="summary-value"><?= $s['totalExpected'] ?>h</div>
+                    <div class="summary-value" data-hours="<?= $s['totalExpected'] ?>"><?= $s['totalExpected'] ?>h</div>
                 </div>
                 <div class="summary-item">
                     <div class="summary-label">Faltantes</div>
-                    <div class="summary-value <?= $s['totalRemaining'] > 0 ? 'missing' : 'ok' ?>">
+                    <div class="summary-value <?= $s['totalRemaining'] > 0 ? 'missing' : 'ok' ?>" data-hours="<?= $s['totalRemaining'] ?>">
                         <?= $s['totalRemaining'] > 0 ? $s['totalRemaining'] . 'h' : '0h' ?>
                     </div>
                 </div>
@@ -1185,14 +1777,91 @@ function jiraStatusClass(string $status): string {
                         <?= $s['completionPercent'] ?>%
                     </div>
                 </div>
+                <div class="summary-item">
+                    <div class="summary-label">Promedio diario</div>
+                    <div class="summary-value" data-hours="<?= $s['avgDailyHours'] ?? 0 ?>"><?= $s['avgDailyHours'] ?? 0 ?>h</div>
+                    <div class="summary-delta"><?= $s['workDays'] ?> días hábiles</div>
+                </div>
             </div>
+
+            <?php
+            // Heatmap (solo si el rango cubre >=7 días)
+            $_heatmapDays = $report['days'] ?? [];
+            $_showHeatmap = count($_heatmapDays) >= 7;
+            ?>
+            <?php if ($_showHeatmap): ?>
+            <?php
+                // Agrupar días en columnas (semanas) tipo GitHub: L,M,M,J,V,S,D verticalmente
+                $_weeks = [];
+                $_curWeek = array_fill(0, 7, null);
+                $_first = true;
+                foreach ($_heatmapDays as $_hd) {
+                    $_dow = (int) date('N', strtotime($_hd['date'])); // 1=Mon..7=Sun
+                    if ($_first) {
+                        // sembrar la primera semana respetando el día inicial
+                        $_curWeek = array_fill(0, 7, null);
+                        $_first = false;
+                    }
+                    $_curWeek[$_dow - 1] = $_hd;
+                    if ($_dow === 7) {
+                        $_weeks[] = $_curWeek;
+                        $_curWeek = array_fill(0, 7, null);
+                    }
+                }
+                $_hasIncompleteWeek = false;
+                foreach ($_curWeek as $_c) { if ($_c !== null) { $_hasIncompleteWeek = true; break; } }
+                if ($_hasIncompleteWeek) $_weeks[] = $_curWeek;
+            ?>
+            <div class="heatmap-section">
+                <div class="heatmap-header">
+                    <span class="heatmap-title">Calendario</span>
+                    <span class="heatmap-legend">
+                        <span style="color: var(--color-text-subtle);">Menos</span>
+                        <span class="heatmap-cell h0"></span>
+                        <span class="heatmap-cell h1"></span>
+                        <span class="heatmap-cell h2"></span>
+                        <span class="heatmap-cell h3"></span>
+                        <span class="heatmap-cell h4"></span>
+                        <span style="color: var(--color-text-subtle);">Más</span>
+                    </span>
+                </div>
+                <div class="heatmap-wrap">
+                    <div class="heatmap-rows-labels">
+                        <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+                    </div>
+                    <div class="heatmap-grid">
+                    <?php foreach ($_weeks as $_week): ?>
+                        <div class="heatmap-col">
+                            <?php foreach ($_week as $_dayCell): ?>
+                                <?php if ($_dayCell === null): ?>
+                                    <span class="heatmap-cell empty"></span>
+                                <?php else:
+                                    $_h = $_dayCell['totalHours'];
+                                    $_isWk = $_dayCell['isWeekend'];
+                                    $_lvl = 0;
+                                    if ($_h > $hoursPerDay)         $_lvl = 5;
+                                    elseif ($_h >= $hoursPerDay - 0.01) $_lvl = 4;
+                                    elseif ($_h >= $hoursPerDay * 0.6)  $_lvl = 3;
+                                    elseif ($_h >= $hoursPerDay * 0.3)  $_lvl = 2;
+                                    elseif ($_h > 0)                    $_lvl = 1;
+                                    $_title = $_dayCell['dayName'] . ' ' . date('d/m', strtotime($_dayCell['date'])) . ' — ' . $_h . 'h';
+                                ?>
+                                    <span class="heatmap-cell h<?= $_lvl ?> <?= $_isWk ? 'weekend' : '' ?>" title="<?= htmlspecialchars($_title) ?>"></span>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <?php $a = $report['amortization']; ?>
             <?php if ($a['totalHours'] > 0): ?>
             <div class="amort-section">
                 <div class="amort-header">
                     <span class="amort-title">Amortizable vs no amortizable</span>
-                    <span class="amort-total"><?= $a['totalHours'] ?>h totales</span>
+                    <span class="amort-total"><span data-hours="<?= $a['totalHours'] ?>"><?= $a['totalHours'] ?>h</span> totales</span>
                 </div>
                 <div class="amort-bar">
                     <?php if ($a['amortizablePercent'] > 0): ?>
@@ -1209,13 +1878,13 @@ function jiraStatusClass(string $status): string {
                 <div class="amort-legend">
                     <div class="amort-legend-item">
                         <span class="amort-legend-dot" style="background:#16793a;"></span>
-                        Amortizable <strong><?= $a['amortizableHours'] ?>h</strong>
-                        <span style="color:#888;">(<?= $a['amortizablePercent'] ?>%)</span>
+                        Amortizable <strong data-hours="<?= $a['amortizableHours'] ?>"><?= $a['amortizableHours'] ?>h</strong>
+                        <span style="color:var(--color-text-subtle);">(<?= $a['amortizablePercent'] ?>%)</span>
                     </div>
                     <div class="amort-legend-item">
                         <span class="amort-legend-dot" style="background:#999;"></span>
-                        No amortizable <strong><?= $a['nonAmortizableHours'] ?>h</strong>
-                        <span style="color:#888;">(<?= $a['nonAmortizablePercent'] ?>%)</span>
+                        No amortizable <strong data-hours="<?= $a['nonAmortizableHours'] ?>"><?= $a['nonAmortizableHours'] ?>h</strong>
+                        <span style="color:var(--color-text-subtle);">(<?= $a['nonAmortizablePercent'] ?>%)</span>
                     </div>
                 </div>
                 <?php if (!empty($a['initiatives'])): ?>
@@ -1233,6 +1902,64 @@ function jiraStatusClass(string $status): string {
                 <?php endif; ?>
             </div>
             <?php endif; ?>
+
+            <?php if (!empty($report['byProject'])): ?>
+            <div class="byproject-section">
+                <div class="byproject-header">
+                    <span class="byproject-title">Por proyecto</span>
+                    <span class="byproject-count"><?= count($report['byProject']) ?> proyecto<?= count($report['byProject']) !== 1 ? 's' : '' ?></span>
+                </div>
+                <div class="byproject-list">
+                    <?php foreach ($report['byProject'] as $_p): ?>
+                    <div class="byproject-row">
+                        <div class="byproject-name"><?= htmlspecialchars($_p['name']) ?></div>
+                        <div class="byproject-bar">
+                            <div class="byproject-fill" style="width: <?= $_p['percent'] ?>%"></div>
+                        </div>
+                        <div class="byproject-hours" data-hours="<?= $_p['totalHours'] ?>"><?= $_p['totalHours'] ?>h</div>
+                        <div class="byproject-pct"><?= $_p['percent'] ?>%</div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <div class="filterbar">
+                <div class="filterbar-search">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="search" id="search-input" placeholder="Buscar tarea, proyecto, descripción…" autocomplete="off">
+                </div>
+                <select id="filter-project" class="select-filter">
+                    <option value="">Todos los proyectos</option>
+                    <?php foreach (array_keys($_filterProjects) as $_p): ?>
+                        <option value="<?= htmlspecialchars($_p) ?>"><?= htmlspecialchars($_p) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <select id="filter-initiative" class="select-filter">
+                    <option value="">Todas las iniciativas</option>
+                    <?php foreach ($_filterInitiatives as $_initKey => $_initSummary): ?>
+                        <option value="<?= htmlspecialchars($_initKey) ?>"><?= htmlspecialchars($_initSummary) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <select id="filter-status" class="select-filter">
+                    <option value="">Todos los estados</option>
+                    <?php foreach (array_keys($_filterStatuses) as $_st): ?>
+                        <option value="<?= htmlspecialchars($_st) ?>"><?= htmlspecialchars($_st) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <button id="filter-clear" class="btn-sm" onclick="clearFilters()" hidden>Limpiar</button>
+                <span class="filter-count" id="filter-count"></span>
+                <div style="flex:1"></div>
+                <a class="btn-sm" href="?range=<?= htmlspecialchars($rangeType) ?>&start=<?= htmlspecialchars($startDate) ?>&end=<?= htmlspecialchars($endDate) ?>&export=csv" title="Descargar reporte como CSV">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    CSV
+                </a>
+                <label class="hr-day-toggle" title="Cambiar entre horas y días">
+                    <span class="hr-day-label active" data-unit="h">h</span>
+                    <span class="hr-day-sep">·</span>
+                    <span class="hr-day-label" data-unit="d">d</span>
+                </label>
+            </div>
 
             <div class="tabs">
                 <button class="tab-btn active" data-tab="dias"      onclick="switchTab('dias')">Captura de horas</button>
@@ -1285,7 +2012,10 @@ function jiraStatusClass(string $status): string {
                                             <?php $pct = $report['summary']['totalLogged'] > 0
                                                 ? round($iss['totalHours'] / $report['summary']['totalLogged'] * 100, 1)
                                                 : 0; ?>
-                                            <tr>
+                                            <tr data-project="<?= htmlspecialchars($iss['project']) ?>"
+                                                data-status="<?= htmlspecialchars($iss['status']) ?>"
+                                                data-initiative="<?= htmlspecialchars($init['key'] ?? '') ?>"
+                                                data-search="<?= htmlspecialchars(mb_strtolower($iss['issueKey'] . ' ' . $iss['summary'] . ' ' . $iss['project'])) ?>">
                                                 <td><a class="key-link" href="<?= htmlspecialchars($jiraBaseUrl) ?>/browse/<?= htmlspecialchars($iss['issueKey']) ?>" target="_blank"><?= htmlspecialchars($iss['issueKey']) ?></a></td>
                                                 <td><?= htmlspecialchars($iss['project']) ?></td>
                                                 <td><?= htmlspecialchars(mb_strimwidth($iss['summary'], 0, 55, '...')) ?></td>
@@ -1370,7 +2100,12 @@ function jiraStatusClass(string $status): string {
                                 </thead>
                                 <tbody>
                                     <?php foreach ($day['worklogs'] as $wl): ?>
-                                        <tr data-wl-id="<?= htmlspecialchars($wl['id']) ?>" data-wl-seconds="<?= (int)$wl['timeSpentSeconds'] ?>">
+                                        <tr data-wl-id="<?= htmlspecialchars($wl['id']) ?>"
+                                            data-wl-seconds="<?= (int)$wl['timeSpentSeconds'] ?>"
+                                            data-project="<?= htmlspecialchars($wl['project']) ?>"
+                                            data-status="<?= htmlspecialchars($wl['status']) ?>"
+                                            data-initiative="<?= htmlspecialchars($_issueInitiative[$wl['issueKey']] ?? '') ?>"
+                                            data-search="<?= htmlspecialchars(mb_strtolower($wl['issueKey'] . ' ' . $wl['summary'] . ' ' . $wl['project'])) ?>">
                                             <td>
                                                 <a class="key-link"
                                                    href="<?= htmlspecialchars($jiraBaseUrl) ?>/browse/<?= htmlspecialchars($wl['issueKey']) ?>"
@@ -1398,7 +2133,15 @@ function jiraStatusClass(string $status): string {
                                 </tbody>
                             </table>
                         <?php else: ?>
-                            <div class="no-data"><?= $day['isWeekend'] ? 'Descanso' : 'Sin horas registradas' ?></div>
+                            <div class="no-data">
+                                <?= $day['isWeekend'] ? 'Descanso' : 'Sin horas registradas' ?>
+                                <?php if (!$day['isWeekend']): ?>
+                                    <div style="margin-top: 0.6rem; display: flex; gap: 0.4rem; justify-content: center;">
+                                        <button class="btn-sm" onclick="openAddWorklog(event,'<?= $day['date'] ?>')">+ Registrar</button>
+                                        <button class="btn-sm" onclick="repeatLastWorklog(event,'<?= $day['date'] ?>')" title="Pre-llena con el último worklog">↻ Repetir último</button>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1422,7 +2165,9 @@ function jiraStatusClass(string $status): string {
                         </thead>
                         <tbody>
                             <?php foreach ($mx['rows'] as $row): ?>
-                            <tr>
+                            <tr data-project="<?= htmlspecialchars($row['project']) ?>"
+                                data-initiative="<?= htmlspecialchars($_issueInitiative[$row['issueKey']] ?? '') ?>"
+                                data-search="<?= htmlspecialchars(mb_strtolower($row['issueKey'] . ' ' . $row['summary'] . ' ' . $row['project'])) ?>">
                                 <td class="col-issue">
                                     <a class="key-link" href="<?= htmlspecialchars($jiraBaseUrl) ?>/browse/<?= htmlspecialchars($row['issueKey']) ?>" target="_blank"><?= htmlspecialchars($row['issueKey']) ?></a>
                                     <span style="color:#aaa;margin-left:0.3rem;font-size:0.7rem;"><?= htmlspecialchars(mb_strimwidth($row['summary'], 0, 40, '...')) ?></span>
@@ -1460,17 +2205,19 @@ function jiraStatusClass(string $status): string {
 
 <div class="overlay" id="addWorklogModal">
     <div class="dialog">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4);">
             <h2 id="wl-title" style="margin-bottom:0;">Registrar tiempo</h2>
-            <button onclick="closeAddWorklog()" style="background:none;border:none;font-size:1.2rem;color:#aaa;cursor:pointer;line-height:1;padding:0 0.2rem;">&times;</button>
+            <button onclick="closeAddWorklog()" class="dialog-close" aria-label="Cerrar">&times;</button>
         </div>
         <input type="hidden" id="wl-mode" value="add">
         <input type="hidden" id="wl-worklog-id" value="">
-        <div class="field">
+        <div class="field" style="position:relative;">
             <label for="wl-key">Clave de tarea</label>
-            <input type="text" id="wl-key" placeholder="PROJ-123" style="text-transform:uppercase">
+            <input type="text" id="wl-key" placeholder="Empieza a escribir o pega la clave (PROJ-123)…" autocomplete="off" style="text-transform:uppercase">
+            <div id="wl-suggestions" class="suggestions" hidden></div>
+            <div id="wl-key-hint" class="field-hint" hidden></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
             <div class="field">
                 <label for="wl-date">Fecha</label>
                 <input type="date" id="wl-date">
@@ -1483,9 +2230,18 @@ function jiraStatusClass(string $status): string {
         <div class="field">
             <label for="wl-duration">Duración</label>
             <input type="text" id="wl-duration" placeholder="ej. 2h 30m  ·  1h  ·  45m">
+            <div class="duration-chips">
+                <button type="button" class="chip" data-dur="30m">30m</button>
+                <button type="button" class="chip" data-dur="1h">1h</button>
+                <button type="button" class="chip" data-dur="2h">2h</button>
+                <button type="button" class="chip" data-dur="4h">4h</button>
+                <button type="button" class="chip chip-rest" id="wl-chip-rest">Resto del día</button>
+            </div>
         </div>
-        <div id="wl-error" style="display:none;color:#c33;font-size:0.8rem;margin-top:0.25rem;"></div>
+        <div id="wl-error" class="form-error" hidden></div>
         <div class="dialog-footer">
+            <span class="kbd-hint">⌘ Enter para guardar</span>
+            <div style="flex:1"></div>
             <button class="btn-sm" onclick="closeAddWorklog()">Cancelar</button>
             <button class="btn-sm primary" id="wl-submit" onclick="submitWorklog()">Registrar</button>
         </div>
@@ -1536,12 +2292,104 @@ function jiraStatusClass(string $status): string {
                 Obt&eacute;n uno en <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">id.atlassian.com</a>
             </div>
         </div>
+        <div class="field" style="border-top:1px solid var(--color-border); padding-top:var(--space-3); margin-top:var(--space-3);">
+            <label>Apariencia</label>
+            <div class="theme-toggle">
+                <button type="button" class="theme-btn" data-theme="light" onclick="setTheme('light')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                    Claro
+                </button>
+                <button type="button" class="theme-btn" data-theme="dark" onclick="setTheme('dark')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    Oscuro
+                </button>
+                <button type="button" class="theme-btn" data-theme="auto" onclick="setTheme('auto')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    Auto
+                </button>
+            </div>
+        </div>
+        <div class="field">
+            <label>Auto-actualizar</label>
+            <div class="theme-toggle">
+                <button type="button" class="theme-btn" data-refresh="0" onclick="setAutoRefresh(0)">Off</button>
+                <button type="button" class="theme-btn" data-refresh="60" onclick="setAutoRefresh(60)">1 min</button>
+                <button type="button" class="theme-btn" data-refresh="300" onclick="setAutoRefresh(300)">5 min</button>
+                <button type="button" class="theme-btn" data-refresh="900" onclick="setAutoRefresh(900)">15 min</button>
+            </div>
+        </div>
         <div class="dialog-footer">
-            <button class="btn-sm danger" onclick="clearCfg()">Borrar</button>
+            <button class="btn-sm danger" onclick="clearCfg()">Borrar credenciales</button>
             <div style="flex:1"></div>
             <button class="btn-sm" onclick="closeCfg()">Cancelar</button>
             <button class="btn-sm primary" onclick="saveCfg()">Guardar</button>
         </div>
+    </div>
+</div>
+
+<div class="overlay" id="myTasksModal">
+    <div class="dialog" style="max-width: 640px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4);gap:var(--space-3);">
+            <h2 style="margin-bottom:0;">Mis tareas asignadas</h2>
+            <div style="display:flex;align-items:center;gap:var(--space-2);">
+                <label class="bug-toggle"><input type="checkbox" id="mt-only-bugs"> Solo bugs</label>
+                <button onclick="closeMyTasks()" class="dialog-close" aria-label="Cerrar">&times;</button>
+            </div>
+        </div>
+        <div class="filterbar-search" style="margin-bottom: var(--space-3);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="mt-search" placeholder="Filtrar por clave o título…" autocomplete="off">
+        </div>
+        <div id="mt-list" class="mt-list">
+            <div class="no-data"><span class="spinner"></span> Cargando…</div>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="subtaskModal">
+    <div class="dialog">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4);">
+            <h2 style="margin-bottom:0;">Nueva subtarea</h2>
+            <button onclick="closeSubtask()" class="dialog-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="field">
+            <label>Tarea padre</label>
+            <div id="st-parent" class="parent-card"></div>
+        </div>
+        <div class="field">
+            <label for="st-summary">Título</label>
+            <input type="text" id="st-summary" placeholder="Resumen de la subtarea">
+        </div>
+        <div class="field">
+            <label for="st-description">Descripción <span style="color:var(--color-text-subtle); font-weight:normal;">(opcional)</span></label>
+            <textarea id="st-description" rows="4" placeholder="Detalles adicionales…"
+                      style="width:100%; padding:8px 10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); font-size:0.88rem; font-family:inherit; color:var(--color-text); background:var(--color-bg); resize:vertical;"></textarea>
+        </div>
+        <div id="st-error" class="form-error" hidden></div>
+        <div class="dialog-footer">
+            <span class="kbd-hint">⌘ Enter para crear</span>
+            <div style="flex:1"></div>
+            <button class="btn-sm" onclick="closeSubtask()">Cancelar</button>
+            <button class="btn-sm primary" id="st-submit" onclick="submitSubtask()">Crear y poner en uso</button>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="helpModal">
+    <div class="dialog">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4);">
+            <h2 style="margin-bottom:0;">Atajos de teclado</h2>
+            <button onclick="closeHelp()" class="dialog-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <dl class="help-shortcuts">
+            <dt>Nuevo registro hoy</dt><dd><kbd>N</kbd></dd>
+            <dt>Editar último</dt><dd><kbd>E</kbd></dd>
+            <dt>Buscar</dt><dd><kbd>/</kbd></dd>
+            <dt>Mostrar esta ayuda</dt><dd><kbd>?</kbd></dd>
+            <dt>Cerrar modal</dt><dd><kbd>Esc</kbd></dd>
+            <dt>Guardar (en modal)</dt><dd><kbd>⌘</kbd> <kbd>Enter</kbd></dd>
+            <dt>Cambiar tab</dt><dd><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></dd>
+        </dl>
     </div>
 </div>
 
@@ -1667,7 +2515,18 @@ function setBtnLoading(btn, loading, originalText) {
             var el = document.getElementById('tab-' + t);
             if (el) el.style.display = t === name ? '' : 'none';
         });
+        try { localStorage.setItem('jb_tab', name); } catch (e) {}
     };
+
+    /* Restaurar tab al cargar */
+    (function() {
+        try {
+            var savedTab = localStorage.getItem('jb_tab');
+            if (savedTab && ['dias', 'jerarquia', 'matriz'].indexOf(savedTab) !== -1) {
+                window.switchTab(savedTab);
+            }
+        } catch (e) {}
+    })();
 
     window.toggleHier = function(id) {
         var el = document.getElementById('hier-' + id);
@@ -1687,17 +2546,66 @@ function setBtnLoading(btn, loading, originalText) {
         if (day) day.classList.toggle('collapsed');
     };
 
+    var HOURS_PER_DAY = <?= (float) $hoursPerDay ?>;
+    var TODAY_STR = '<?= $today->format('Y-m-d') ?>';
+
+    /**
+     * Devuelve "HH:MM" tras el último worklog del día (sumando su duración).
+     * Si no hay worklogs ese día, devuelve '09:00'.
+     */
+    function calcStartTimeFor(date) {
+        var dayEl = document.querySelector('.day[data-date="' + date + '"]');
+        if (!dayEl) return '09:00';
+        var rows = dayEl.querySelectorAll('tr[data-wl-id]');
+        var lastEnd = null;
+        rows.forEach(function(row) {
+            var cells = row.querySelectorAll('td');
+            if (cells.length < 6) return;
+            var time = (cells[4].textContent || '').trim();
+            var sec = parseInt(row.dataset.wlSeconds || 0);
+            var parts = time.split(':');
+            if (parts.length !== 2) return;
+            var endMin = parseInt(parts[0]) * 60 + parseInt(parts[1]) + Math.floor(sec / 60);
+            if (lastEnd === null || endMin > lastEnd) lastEnd = endMin;
+        });
+        if (lastEnd === null) return '09:00';
+        var h = Math.floor(lastEnd / 60), m = lastEnd % 60;
+        return ('0' + h).slice(-2) + ':' + ('0' + m).slice(-2);
+    }
+
+    /** Suma seg de los worklogs del día. */
+    function dayLoggedSeconds(date) {
+        var dayEl = document.querySelector('.day[data-date="' + date + '"]');
+        if (!dayEl) return 0;
+        var total = 0;
+        dayEl.querySelectorAll('tr[data-wl-id]').forEach(function(r) {
+            total += parseInt(r.dataset.wlSeconds || 0);
+        });
+        return total;
+    }
+
     function openWorklogModal(mode, issueKey, worklogId, date, time, duration) {
         document.getElementById('wl-mode').value = mode;
         document.getElementById('wl-worklog-id').value = worklogId || '';
-        document.getElementById('wl-key').value = issueKey || '';
-        document.getElementById('wl-key').readOnly = (mode === 'edit');
-        document.getElementById('wl-key').style.background = (mode === 'edit') ? '#f5f5f5' : '';
-        document.getElementById('wl-key').style.color = (mode === 'edit') ? '#999' : '';
+        var keyInput = document.getElementById('wl-key');
+        keyInput.value = issueKey || '';
+        keyInput.readOnly = (mode === 'edit');
+        keyInput.style.background = (mode === 'edit') ? 'var(--color-bg-subtle)' : '';
+        keyInput.style.color = (mode === 'edit') ? 'var(--color-text-muted)' : '';
         document.getElementById('wl-date').value = date || '';
+
+        // En modo "add", calcular hora inicio según último worklog del día.
+        if (mode === 'add' && !time) {
+            time = calcStartTimeFor(date);
+        }
         document.getElementById('wl-time').value = time || '09:00';
         document.getElementById('wl-duration').value = duration || '';
-        document.getElementById('wl-error').style.display = 'none';
+
+        hideWlError();
+        hideSuggestions();
+        hideKeyHint();
+        clearChipActive();
+
         document.getElementById('wl-title').textContent = (mode === 'edit') ? 'Editar registro' : 'Registrar tiempo';
         var btn = document.getElementById('wl-submit');
         btn.disabled = false;
@@ -1711,7 +2619,7 @@ function setBtnLoading(btn, loading, originalText) {
 
     window.openAddWorklog = function(e, date) {
         e.stopPropagation();
-        openWorklogModal('add', '', '', date, '09:00', '');
+        openWorklogModal('add', '', '', date, '', '');
     };
 
     window.openEditWorklog = function(e, issueKey, worklogId, date, time, duration) {
@@ -1721,7 +2629,31 @@ function setBtnLoading(btn, loading, originalText) {
 
     window.closeAddWorklog = function() {
         document.getElementById('addWorklogModal').classList.remove('active');
+        hideSuggestions();
     };
+
+    /* Repetir último worklog del día anterior (o cualquier worklog reciente). */
+    window.repeatLastWorklog = function(e, date) {
+        e.stopPropagation();
+        var rows = document.querySelectorAll('.day tr[data-wl-id]');
+        if (!rows.length) {
+            toast('No hay worklogs anteriores para repetir', 'warning');
+            return;
+        }
+        var last = rows[0];
+        var cells = last.querySelectorAll('td');
+        var key = (cells[0].textContent || '').trim();
+        var sec = parseInt(last.dataset.wlSeconds || 0);
+        var dur = secondsToDurationStr(sec);
+        openWorklogModal('add', key, '', date, '', dur);
+    };
+
+    function secondsToDurationStr(s) {
+        var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+        if (h && m) return h + 'h ' + m + 'm';
+        if (h) return h + 'h';
+        return m + 'm';
+    }
 
     // Restaurar scroll si venimos de un add
     (function() {
@@ -1877,7 +2809,7 @@ function setBtnLoading(btn, loading, originalText) {
         if (!date)     { showWlError('Selecciona la fecha'); return; }
         if (!duration) { showWlError('Ingresa la duración'); return; }
 
-        document.getElementById('wl-error').style.display = 'none';
+        hideWlError();
         var btn = document.getElementById('wl-submit');
         setBtnLoading(btn, true, mode === 'edit' ? 'Guardando…' : 'Registrando…');
 
@@ -1995,8 +2927,566 @@ function setBtnLoading(btn, loading, originalText) {
     function showWlError(msg) {
         var el = document.getElementById('wl-error');
         el.textContent = msg;
-        el.style.display = 'block';
+        el.hidden = false;
     }
+
+    function hideWlError() {
+        var el = document.getElementById('wl-error');
+        if (el) el.hidden = true;
+    }
+
+    function hideSuggestions() {
+        var el = document.getElementById('wl-suggestions');
+        if (el) { el.hidden = true; el.innerHTML = ''; }
+    }
+
+    function showKeyHint(html) {
+        var el = document.getElementById('wl-key-hint');
+        el.innerHTML = html;
+        el.hidden = false;
+    }
+    function hideKeyHint() {
+        var el = document.getElementById('wl-key-hint');
+        if (el) el.hidden = true;
+    }
+
+    function clearChipActive() {
+        document.querySelectorAll('.duration-chips .chip.active').forEach(function(c) {
+            c.classList.remove('active');
+        });
+    }
+
+    /** Typeahead: llama a /pick_issue en POST. */
+    var pickTimer = null;
+    var pickAbort = null;
+    function fetchSuggestions(query) {
+        if (pickAbort) try { pickAbort.abort(); } catch(e) {}
+        if (!query || query.length < 2) { hideSuggestions(); return; }
+
+        var box = document.getElementById('wl-suggestions');
+        box.innerHTML = '<div class="suggestion-empty"><span class="spinner" style="margin-right:6px;vertical-align:middle"></span>Buscando…</div>';
+        box.hidden = false;
+
+        pickAbort = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var opts = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ action: 'pick_issue', query: query })
+        };
+        if (pickAbort) opts.signal = pickAbort.signal;
+
+        fetch(location.pathname + location.search, opts)
+            .then(function(r) {
+                if (!r.ok) {
+                    return r.text().then(function(text) {
+                        var msg;
+                        try { msg = JSON.parse(text).error || ('HTTP ' + r.status); }
+                        catch(e) { msg = 'HTTP ' + r.status; }
+                        throw new Error(msg);
+                    });
+                }
+                return r.json();
+            })
+            .then(function(data) {
+                if (!data.ok) {
+                    throw new Error(data.error || 'Respuesta sin ok');
+                }
+                if (data._debug) console.log('[picker]', data._debug);
+                renderSuggestions(data.issues || []);
+            })
+            .catch(function(err) {
+                if (err && err.name === 'AbortError') return;
+                box.innerHTML = '<div class="suggestion-empty" style="color:var(--color-danger);">Error: ' + escHtml(err.message || 'sin detalle') + '</div>';
+                box.hidden = false;
+                console.error('[picker]', err);
+            });
+    }
+
+    function renderSuggestions(issues) {
+        var box = document.getElementById('wl-suggestions');
+        if (!issues.length) {
+            box.innerHTML = '<div class="suggestion-empty">Sin coincidencias</div>';
+            box.hidden = false;
+            return;
+        }
+        box.innerHTML = issues.map(function(iss, i) {
+            return '<div class="suggestion-item" data-key="' + escAttr(iss.key) + '" data-summary="' + escAttr(iss.summary) + '" data-project="' + escAttr(iss.project) + '">' +
+                '<span class="suggestion-key">' + escHtml(iss.key) + '</span>' +
+                '<span class="suggestion-summary">' + escHtml(iss.summary) + '</span>' +
+                (iss.project ? '<span class="suggestion-project">' + escHtml(iss.project) + '</span>' : '') +
+                '</div>';
+        }).join('');
+        box.hidden = false;
+
+        Array.prototype.forEach.call(box.querySelectorAll('.suggestion-item'), function(item) {
+            item.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                selectSuggestion(item);
+            });
+        });
+    }
+
+    function selectSuggestion(item) {
+        var key = item.dataset.key;
+        var summary = item.dataset.summary;
+        var project = item.dataset.project;
+        document.getElementById('wl-key').value = key;
+        showKeyHint('<strong>' + escHtml(summary) + '</strong>' + (project ? ' · ' + escHtml(project) : ''));
+        hideSuggestions();
+        document.getElementById('wl-duration').focus();
+    }
+
+    function escHtml(s) {
+        return (s || '').replace(/[&<>"']/g, function(c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c];
+        });
+    }
+    function escAttr(s) { return escHtml(s); }
+
+    /* ===== Filtros y búsqueda ===== */
+    function applyFilters() {
+        var search = (document.getElementById('search-input').value || '').trim().toLowerCase();
+        var project = document.getElementById('filter-project').value;
+        var initiative = document.getElementById('filter-initiative').value;
+        var status = document.getElementById('filter-status').value;
+
+        // Toggle visual del botón "Limpiar" y del filter-count
+        var anyFilter = !!(search || project || initiative || status);
+        document.getElementById('filter-clear').hidden = !anyFilter;
+        document.getElementById('filter-project').classList.toggle('has-value', !!project);
+        document.getElementById('filter-initiative').classList.toggle('has-value', !!initiative);
+        document.getElementById('filter-status').classList.toggle('has-value', !!status);
+
+        var visibleCount = 0, totalCount = 0;
+        document.querySelectorAll('[data-search]').forEach(function(el) {
+            totalCount++;
+            var s = el.dataset.search || '';
+            var p = el.dataset.project || '';
+            var i = el.dataset.initiative || '';
+            var st = el.dataset.status || '';
+            var hide = false;
+            if (search && s.indexOf(search) === -1) hide = true;
+            if (project && p !== project) hide = true;
+            if (initiative && i !== initiative) hide = true;
+            if (status && st !== status) hide = true;
+            el.style.display = hide ? 'none' : '';
+            if (!hide) visibleCount++;
+        });
+
+        // Ocultar días sin filas visibles
+        document.querySelectorAll('.day').forEach(function(day) {
+            var rows = day.querySelectorAll('tr[data-search]');
+            if (rows.length === 0) return;
+            var visible = Array.prototype.filter.call(rows, function(r) { return r.style.display !== 'none'; });
+            day.style.display = (anyFilter && visible.length === 0) ? 'none' : '';
+        });
+
+        // Ocultar épicas/iniciativas sin issues visibles
+        document.querySelectorAll('.hier-epic').forEach(function(ep) {
+            var rows = ep.querySelectorAll('tbody tr[data-search]');
+            if (rows.length === 0) return;
+            var visible = Array.prototype.filter.call(rows, function(r) { return r.style.display !== 'none'; });
+            ep.style.display = (anyFilter && visible.length === 0) ? 'none' : '';
+        });
+        document.querySelectorAll('.hier-init').forEach(function(it) {
+            var epics = it.querySelectorAll('.hier-epic');
+            if (epics.length === 0) return;
+            var visible = Array.prototype.filter.call(epics, function(e) { return e.style.display !== 'none'; });
+            it.style.display = (anyFilter && visible.length === 0) ? 'none' : '';
+        });
+
+        var countEl = document.getElementById('filter-count');
+        if (anyFilter && totalCount > 0) {
+            countEl.textContent = visibleCount + ' / ' + totalCount + ' resultados';
+            countEl.hidden = false;
+        } else {
+            countEl.hidden = true;
+        }
+    }
+
+    window.clearFilters = function() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('filter-project').value = '';
+        document.getElementById('filter-initiative').value = '';
+        document.getElementById('filter-status').value = '';
+        applyFilters();
+    };
+
+    var filterTimer;
+    var searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(filterTimer);
+            filterTimer = setTimeout(applyFilters, 120);
+        });
+    }
+    ['filter-project', 'filter-initiative', 'filter-status'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', applyFilters);
+    });
+
+    /* ===== Toggle horas / días ===== */
+    var currentUnit = 'h';
+    function applyUnit(unit) {
+        currentUnit = unit;
+        document.querySelectorAll('.hr-day-label').forEach(function(l) {
+            l.classList.toggle('active', l.dataset.unit === unit);
+        });
+        document.querySelectorAll('[data-hours]').forEach(function(el) {
+            var h = parseFloat(el.dataset.hours);
+            if (isNaN(h)) return;
+            if (unit === 'd') {
+                el.textContent = (Math.round(h / HOURS_PER_DAY * 100) / 100) + 'd';
+            } else {
+                el.textContent = h + 'h';
+            }
+        });
+    }
+    document.querySelectorAll('.hr-day-label').forEach(function(l) {
+        l.addEventListener('click', function() { applyUnit(l.dataset.unit); });
+    });
+
+    /* ===== Listeners del modal de worklog ===== */
+    var keyInput = document.getElementById('wl-key');
+    if (keyInput) {
+        keyInput.addEventListener('input', function() {
+            hideKeyHint();
+            clearTimeout(pickTimer);
+            var q = this.value.trim();
+            pickTimer = setTimeout(function() { fetchSuggestions(q); }, 250);
+        });
+        keyInput.addEventListener('blur', function() {
+            // Pequeño delay para permitir click en sugerencia.
+            setTimeout(hideSuggestions, 180);
+        });
+        keyInput.addEventListener('keydown', function(e) {
+            var box = document.getElementById('wl-suggestions');
+            if (box.hidden) return;
+            var items = box.querySelectorAll('.suggestion-item');
+            if (!items.length) return;
+            var active = box.querySelector('.suggestion-item.active');
+            var idx = active ? Array.prototype.indexOf.call(items, active) : -1;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (active) active.classList.remove('active');
+                items[(idx + 1) % items.length].classList.add('active');
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (active) active.classList.remove('active');
+                items[(idx - 1 + items.length) % items.length].classList.add('active');
+            } else if (e.key === 'Enter' && active) {
+                e.preventDefault();
+                selectSuggestion(active);
+            } else if (e.key === 'Escape') {
+                hideSuggestions();
+            }
+        });
+    }
+
+    /* Chips de duración */
+    document.querySelectorAll('.duration-chips .chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            clearChipActive();
+            var dur = chip.dataset.dur;
+            if (chip.id === 'wl-chip-rest') {
+                // Resto del día = HOURS_PER_DAY - lo ya logueado en ese día
+                var date = document.getElementById('wl-date').value;
+                var loggedSec = dayLoggedSeconds(date);
+                var remainSec = Math.max(0, HOURS_PER_DAY * 3600 - loggedSec);
+                if (remainSec === 0) {
+                    toast('Este día ya tiene la jornada completa', 'warning');
+                    return;
+                }
+                dur = secondsToDurationStr(remainSec);
+            }
+            document.getElementById('wl-duration').value = dur;
+            chip.classList.add('active');
+        });
+    });
+
+    /* Cmd/Ctrl+Enter para guardar dentro del modal */
+    var modal = document.getElementById('addWorklogModal');
+    if (modal) {
+        modal.addEventListener('keydown', function(e) {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                window.submitWorklog();
+            }
+        });
+    }
+
+    /* ===== Comparativa async (fetch después del render) ===== */
+    (function() {
+        var ph = document.getElementById('delta-placeholder');
+        if (!ph) return;
+        var current = parseFloat(ph.dataset.current);
+        var start = ph.dataset.start;
+        var end = ph.dataset.end;
+        if (isNaN(current) || !start || !end) { ph.remove(); return; }
+
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'compare', startDate: start, endDate: end, currentTotal: current })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) { ph.remove(); return; }
+            ph.classList.remove('loading');
+            var d = data.delta;
+            var prev = data.previousLogged;
+            var title = 'vs. periodo anterior (' + prev + 'h)';
+            if (d > 0.01) {
+                ph.className = 'summary-delta up';
+                ph.title = title;
+                ph.innerHTML = '▲ +' + d + 'h vs. anterior';
+            } else if (d < -0.01) {
+                ph.className = 'summary-delta down';
+                ph.title = title;
+                ph.innerHTML = '▼ ' + d + 'h vs. anterior';
+            } else {
+                ph.className = 'summary-delta';
+                ph.title = title;
+                ph.innerHTML = '≈ igual al periodo anterior';
+            }
+        })
+        .catch(function() { ph.remove(); });
+    })();
+
+    /* ===== Tema (claro/oscuro/auto) ===== */
+    window.setTheme = function(theme) {
+        var resolved = theme;
+        if (theme === 'auto') {
+            resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        if (resolved === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+        try { localStorage.setItem('jb_theme', theme); } catch (e) {}
+        document.querySelectorAll('.theme-btn[data-theme]').forEach(function(b) {
+            b.classList.toggle('active', b.dataset.theme === theme);
+        });
+    };
+
+    function loadTheme() {
+        var saved = 'auto';
+        try { saved = localStorage.getItem('jb_theme') || 'auto'; } catch (e) {}
+        window.setTheme(saved);
+    }
+    loadTheme();
+
+    if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+            var saved = 'auto';
+            try { saved = localStorage.getItem('jb_theme') || 'auto'; } catch (e) {}
+            if (saved === 'auto') window.setTheme('auto');
+        });
+    }
+
+    /* ===== Auto-refresh ===== */
+    var refreshTimer = null;
+    window.setAutoRefresh = function(seconds) {
+        if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+        try { localStorage.setItem('jb_autorefresh', String(seconds)); } catch (e) {}
+        document.querySelectorAll('.theme-btn[data-refresh]').forEach(function(b) {
+            b.classList.toggle('active', parseInt(b.dataset.refresh) === seconds);
+        });
+        if (seconds > 0) {
+            refreshTimer = setInterval(function() { location.reload(); }, seconds * 1000);
+        }
+    };
+    (function() {
+        var s = 0;
+        try { s = parseInt(localStorage.getItem('jb_autorefresh') || '0'); } catch (e) {}
+        window.setAutoRefresh(s);
+    })();
+
+    /* ===== Help modal ===== */
+    window.openHelp  = function() { document.getElementById('helpModal').classList.add('active'); };
+    window.closeHelp = function() { document.getElementById('helpModal').classList.remove('active'); };
+
+    /* ===== Mis tareas + subtarea rápida ===== */
+    var myTasksData = [];
+
+    window.openMyTasks = function() {
+        var modal = document.getElementById('myTasksModal');
+        modal.classList.add('active');
+        var listEl = document.getElementById('mt-list');
+        listEl.innerHTML = '<div class="no-data"><span class="spinner"></span> Cargando…</div>';
+
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'list_assigned' })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) throw new Error(data.error || 'Error');
+            myTasksData = data.issues || [];
+            renderMyTasks();
+        })
+        .catch(function(err) {
+            listEl.innerHTML = '<div class="no-data" style="color:var(--color-danger);">Error: ' + escHtml(err.message) + '</div>';
+        });
+    };
+    window.closeMyTasks = function() {
+        document.getElementById('myTasksModal').classList.remove('active');
+    };
+
+    function renderMyTasks() {
+        var listEl = document.getElementById('mt-list');
+        var onlyBugs = document.getElementById('mt-only-bugs').checked;
+        var filter = (document.getElementById('mt-search').value || '').toLowerCase();
+
+        var filtered = myTasksData.filter(function(iss) {
+            if (onlyBugs && !/bug|defect|error/i.test(iss.issuetype || '')) return false;
+            if (filter) {
+                var hay = (iss.key + ' ' + iss.summary + ' ' + iss.project).toLowerCase();
+                if (hay.indexOf(filter) === -1) return false;
+            }
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            listEl.innerHTML = '<div class="no-data">Sin resultados</div>';
+            return;
+        }
+
+        listEl.innerHTML = filtered.map(function(iss) {
+            var typeCls = '';
+            var type = (iss.issuetype || '').toLowerCase();
+            if (/bug|defect|error/.test(type)) typeCls = 'bug';
+            else if (/story|hist/.test(type))  typeCls = 'story';
+            else if (/task|tarea/.test(type)) typeCls = 'task';
+
+            return '<div class="mt-row">' +
+                '<div class="mt-row-body">' +
+                    '<div class="mt-row-summary">' + escHtml(iss.summary) + '</div>' +
+                    '<div class="mt-row-meta">' +
+                        '<a class="mt-row-key" href="' + JIRA_BASE_URL + '/browse/' + escHtml(iss.key) + '" target="_blank">' + escHtml(iss.key) + '</a> · ' +
+                        '<span class="mt-row-type ' + typeCls + '">' + escHtml(iss.issuetype || '?') + '</span> · ' +
+                        '<span>' + escHtml(iss.project) + '</span> · ' +
+                        '<span class="status-tag ' + jiraStatusClassJs(iss.status) + '">' + escHtml(iss.status) + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<button class="btn-sm primary" data-key="' + escAttr(iss.key) + '" data-summary="' + escAttr(iss.summary) + '">+ Subtarea</button>' +
+            '</div>';
+        }).join('');
+
+        // Bind
+        Array.prototype.forEach.call(listEl.querySelectorAll('.btn-sm[data-key]'), function(btn) {
+            btn.addEventListener('click', function() {
+                openSubtask(btn.dataset.key, btn.dataset.summary);
+            });
+        });
+    }
+
+    document.getElementById('mt-only-bugs').addEventListener('change', renderMyTasks);
+    document.getElementById('mt-search').addEventListener('input', renderMyTasks);
+
+    window.openSubtask = function(parentKey, parentSummary) {
+        document.getElementById('st-parent').innerHTML =
+            '<span class="key">' + escHtml(parentKey) + '</span> · ' + escHtml(parentSummary || '');
+        document.getElementById('st-parent').dataset.parent = parentKey;
+        document.getElementById('st-summary').value = '';
+        document.getElementById('st-description').value = '';
+        document.getElementById('st-error').hidden = true;
+        var btn = document.getElementById('st-submit');
+        btn.disabled = false;
+        btn.textContent = 'Crear y poner en uso';
+        document.getElementById('subtaskModal').classList.add('active');
+        setTimeout(function() { document.getElementById('st-summary').focus(); }, 50);
+    };
+    window.closeSubtask = function() {
+        document.getElementById('subtaskModal').classList.remove('active');
+    };
+
+    window.submitSubtask = function() {
+        var parentKey = document.getElementById('st-parent').dataset.parent;
+        var summary = document.getElementById('st-summary').value.trim();
+        var description = document.getElementById('st-description').value.trim();
+
+        var errEl = document.getElementById('st-error');
+        if (!summary) {
+            errEl.textContent = 'El título es obligatorio';
+            errEl.hidden = false;
+            return;
+        }
+        errEl.hidden = true;
+
+        var btn = document.getElementById('st-submit');
+        setBtnLoading(btn, true, 'Creando…');
+
+        fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'create_subtask',
+                parentKey: parentKey,
+                summary: summary,
+                description: description
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) throw new Error(data.error || 'Error desconocido');
+            closeSubtask();
+            var msg = 'Subtarea ' + data.key + ' creada';
+            if (data.transitionName) {
+                msg += ' (' + data.transitionName + ')';
+            } else if (data.transitionFailed) {
+                msg += ' — no se pudo cambiar el estado';
+            }
+            toast(msg, 'success');
+        })
+        .catch(function(err) {
+            errEl.textContent = err.message;
+            errEl.hidden = false;
+            setBtnLoading(btn, false);
+        });
+    };
+
+    /* Cmd+Enter en subtarea */
+    document.getElementById('subtaskModal').addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            submitSubtask();
+        }
+    });
+
+    /* ===== Atajos de teclado globales ===== */
+    function inputFocused() {
+        var t = document.activeElement;
+        if (!t) return false;
+        var tag = (t.tagName || '').toLowerCase();
+        return tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable;
+    }
+    function modalOpen() {
+        return document.querySelector('.overlay.active') !== null;
+    }
+    document.addEventListener('keydown', function(e) {
+        // Esc cierra cualquier overlay
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.overlay.active').forEach(function(o) { o.classList.remove('active'); });
+            return;
+        }
+        if (inputFocused() || modalOpen()) return;
+
+        if (e.key === '?' && e.shiftKey) { e.preventDefault(); window.openHelp(); return; }
+        if (e.key === '/')               { e.preventDefault(); var s = document.getElementById('search-input'); if (s) s.focus(); return; }
+        if (e.key === 'n' || e.key === 'N') { e.preventDefault(); window.openAddWorklog({ stopPropagation:function(){} }, TODAY_STR); return; }
+        if (e.key === 'e' || e.key === 'E') {
+            e.preventDefault();
+            var btn = document.querySelector('.btn-edit-wl');
+            if (btn) btn.click();
+            return;
+        }
+        if (e.key === '1') { e.preventDefault(); window.switchTab('dias');      return; }
+        if (e.key === '2') { e.preventDefault(); window.switchTab('jerarquia'); return; }
+        if (e.key === '3') { e.preventDefault(); window.switchTab('matriz');    return; }
+    });
 })();
 </script>
 </body>
